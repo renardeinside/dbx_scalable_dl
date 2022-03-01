@@ -1,0 +1,9 @@
+{
+    "environments": {
+        "default": {
+            "profile": "e2-demo-aws",
+            "workspace_dir": "/Shared/dbx/dbx_scalable_dl",
+            "artifact_location": "dbfs:/Shared/dbx/projects/dbx_scalable_dl"
+        }
+    }
+}
