@@ -6,6 +6,7 @@ INSTALL_REQUIRES = [
     "tensorflow-recommenders==0.6.0",
     "petastorm==0.11.2",
     "horovod==0.22.1",
+    "tqdm==4.63.0",
 ]
 
 setup(
