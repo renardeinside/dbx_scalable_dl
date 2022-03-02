@@ -25,7 +25,7 @@ class SampleJobUnitTest(unittest.TestCase):
         self.spark = configure_spark_with_delta_pip(_builder).getOrCreate()
         self.spark.sparkContext.setLogLevel("INFO")
 
-    def test_loader(self):
+    def test_data_loader(self):
         # feel free to add new methods to this magic mock to mock some particular functionality
         _conf = {
             "data_url": "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Gift_Cards_5.json.gz",
@@ -42,6 +42,7 @@ class SampleJobUnitTest(unittest.TestCase):
             [t.name for t in self.spark.catalog.listTables(_conf["database"])],
         )
         self.assertGreater(self.spark.table(f"{_conf['database']}.reviews").count(), 0)
+        self.spark.table(f"{_conf['database']}.reviews").show()
 
     def tearDown(self):
         if pathlib.Path(self.test_dir).exists():

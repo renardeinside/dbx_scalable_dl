@@ -4,9 +4,7 @@ from dbx_scalable_dl.utils import FileLoadingContext
 
 class DataLoaderTask(Job):
     def _create_db(self):
-        _db = self.conf["database"]
-        if _db not in [d.name for d in self.spark.catalog.listDatabases()]:
-            self.spark.sql(f"create database if not exists {_db}")
+        self.spark.sql(f"create database if not exists {self.conf['database']}")
 
     def _save_data_to_table(self, source_url: str, output_table: str):
         with FileLoadingContext(source_url) as output_file:
@@ -15,6 +13,9 @@ class DataLoaderTask(Job):
                 .option("inferSchema", True)
                 .load(output_file)
                 .drop("style")
+                .selectExpr(
+                    "asin as product_id", "reviewerID as user_id", "overall as rating"
+                )
             )
             _df.write.format("delta").mode("overwrite").saveAsTable(output_table)
 
