@@ -1,5 +1,6 @@
 from typing import Tuple, Optional
 
+import numpy as np
 import tensorflow as tf
 from petastorm.spark import SparkDatasetConverter, make_spark_converter
 from pyspark.sql import DataFrame, SparkSession
@@ -10,7 +11,7 @@ class DataProvider:
         self,
         spark: SparkSession,
         ratings: DataFrame,
-        cache_dir: Optional[str] = "file://tmp/petastorm/cache",
+        cache_dir: Optional[str] = "file:///tmp/petastorm/cache",
     ):
         self._ratings = ratings
         spark.conf.set(SparkDatasetConverter.PARENT_CACHE_DIR_URL_CONF, cache_dir)
@@ -26,20 +27,24 @@ class DataProvider:
         )
         return tf.data.Dataset.from_tensor_slices(_values)
 
-    def get_products(self) -> tf.data.Dataset:
-        return self._get_unique_vector("product_id")
+    @staticmethod
+    def dataset_to_numpy_array(dataset) -> np.array:
+        return np.array(list(dataset.as_numpy_iterator()))
 
-    def get_users(self) -> tf.data.Dataset:
-        return self._get_unique_vector("user_id")
+    def get_unique_product_ids(self) -> tf.data.Dataset:
+        return self._get_unique_vector("product_id").cache()
 
-    def get_train_test_readers(
-        self, weights=None, seed: Optional[int] = 42
+    def get_unique_user_ids(self) -> tf.data.Dataset:
+        return self._get_unique_vector("user_id").cache()
+
+    def get_train_test_converters(
+        self,
+        weights: Optional[Tuple[float, float]] = (0.8, 0.2),
+        seed: Optional[int] = 42,
     ) -> Tuple[SparkDatasetConverter, SparkDatasetConverter]:
-        if weights is None:
-            weights = [0.8, 0.2]
         train_df, validation_df = self._ratings.select(
             "product_id", "user_id", "rating"
-        ).randomSplit(weights, seed)
+        ).randomSplit(list(weights), seed)
         train_converter = make_spark_converter(train_df)
         validation_converter = make_spark_converter(validation_df)
         return train_converter, validation_converter
