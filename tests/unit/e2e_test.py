@@ -2,19 +2,15 @@ import pathlib
 import shutil
 import tempfile
 import unittest
-
+from typing import Callable
 from unittest.mock import MagicMock
 
-from typing import Callable
+from delta import configure_spark_with_delta_pip
+from pyspark.sql import SparkSession
 
-from dbx_scalable_dl.callbacks import MLflowLoggingCallback
 from dbx_scalable_dl.tasks.data_loader import DataLoaderTask
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
-from pyspark.sql import SparkSession
-from delta import configure_spark_with_delta_pip
-
 from dbx_scalable_dl.utils import FileLoadingContext
-from dbx_scalable_dl.data_provider import DataProvider
 
 
 class LocalRunner:
@@ -70,8 +66,7 @@ class SampleJobUnitTest(unittest.TestCase):
         )
 
     def test_model_builder(self):
-        # mlflow_uri = f"file://{tempfile.TemporaryDirectory().name}"
-        mlflow_uri = None
+        mlflow_uri = "sqlite:///mlruns.db"
         builder_task = ModelBuilderTask(
             spark=self.spark,
             init_conf={

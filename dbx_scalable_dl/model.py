@@ -15,10 +15,10 @@ from dbx_scalable_dl.data_provider import DataProvider
 
 class BasicModel(Model):
     def __init__(
-            self,
-            rating_weight: float,
-            retrieval_weight: float,
-            data_provider: DataProvider,
+        self,
+        rating_weight: float,
+        retrieval_weight: float,
+        data_provider: DataProvider,
     ) -> None:
         # We take the loss weights in the constructor: this allows us to instantiate
         # several model objects with different loss weights.
@@ -112,7 +112,7 @@ class BasicModel(Model):
         return bf_index
 
     def compute_loss(
-            self, features: Dict[Text, tf.Tensor], training=False
+        self, features: Dict[Text, tf.Tensor], training=False
     ) -> tf.Tensor:
         ratings = features.pop("rating")
 
@@ -130,7 +130,6 @@ class BasicModel(Model):
 
 
 class InferenceModel(Model):
-
     def compute_loss(self, inputs, training: bool = False) -> tf.Tensor:
         """
         This model doesn't compute any losses
@@ -153,14 +152,18 @@ class InferenceModel(Model):
         # ranking - here we simply rank N best recommendations
 
         # we repeat user_embedding across user axis to make it compatible with product_embeddings
-        user_embeddings = tf.repeat(self.user_model(user_id), num_recommendations, axis=0)
+        user_embeddings = tf.repeat(
+            self.user_model(user_id), num_recommendations, axis=0
+        )
 
         # in this context squeeze will transform (1,N,E) to (N,E)
         # where N - number of recommendations
         # E - embedding length from the model
         product_embeddings = tf.squeeze(self.product_model(product_ids))
 
-        ratings = self.ranking_model(tf.concat([user_embeddings, product_embeddings], axis=1))
+        ratings = self.ranking_model(
+            tf.concat([user_embeddings, product_embeddings], axis=1)
+        )
 
         # we squeeze both vectors and map them into a dictionary
         _ratings = dict(zip(product_ids.numpy().squeeze(), ratings.numpy().squeeze()))

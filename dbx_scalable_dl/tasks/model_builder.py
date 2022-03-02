@@ -96,12 +96,7 @@ class ModelBuilderTask(Job):
                 )
 
                 if hvd.rank() == 0:
-                    logging_callback = MLflowLoggingCallback(
-                        self.conf["model_name"],
-                        provider.dataset_to_numpy_array(
-                            provider.get_unique_product_ids()
-                        ),
-                    )
+                    logging_callback = MLflowLoggingCallback(self.conf["model_name"])
                     callbacks.append(logging_callback)
 
                 model.fit(
