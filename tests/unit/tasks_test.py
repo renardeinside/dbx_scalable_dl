@@ -17,7 +17,7 @@ class LocalRunner:
         main()
 
 
-class SampleJobUnitTest(TestCaseWithEnvironment):
+class TasksTest(TestCaseWithEnvironment):
     def setUp(self):
         self.source_url = "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Gift_Cards_5.json.gz"
 

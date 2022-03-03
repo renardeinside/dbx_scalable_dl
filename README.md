@@ -15,6 +15,7 @@ HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.22.1"
 ## TBD
 
 - add deployer job
+- add conftest and fixtures
 
 ## Resources
 
