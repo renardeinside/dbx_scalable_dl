@@ -1,7 +1,7 @@
 import mlflow
 import tensorflow as tf
 
-from controller import ModelController
+from dbx_scalable_dl.controller import ModelController
 
 
 class MLflowLoggingCallback(tf.keras.callbacks.Callback):

@@ -7,8 +7,7 @@ from mlflow.entities.model_registry import ModelVersion
 from mlflow.tracking import MlflowClient
 from typing import List, Optional, Tuple
 import mlflow.sagemaker as mfs
-from dbx_scalable_dl.model import BasicModel, InferenceModel
-from dbx_scalable_dl.serving import ServingModel
+from dbx_scalable_dl.models import BasicModel, InferenceModel, ServingModel
 
 
 class ModelController:
@@ -28,6 +27,13 @@ class ModelController:
 
     def register_model(self, model: BasicModel):
         inference_model = InferenceModel(model)
+        _ = inference_model(
+            InferenceModel.preprocess_arguments(
+                {
+                    "user_id": model.users_ids_as_numpy[[1]],
+                }
+            )
+        )  # we need to call the method for proper model serialization
 
         with tempfile.TemporaryDirectory() as temp_dir:
             tf.saved_model.save(inference_model, temp_dir)

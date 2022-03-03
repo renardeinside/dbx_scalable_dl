@@ -38,3 +38,4 @@ dependencies:
       - tensorflow-cpu==2.8.0 # in Databricks 9.1 it's actually 2.6.0, but for the sake of compilation simplicity we use 2.8.0 here
       - keras==2.8.0
       - petastorm==0.11.2
+      - locust

@@ -1,17 +1,19 @@
-from typing import Dict, Text
+import logging
+from typing import Dict, Text, Optional, Union
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
 from keras.engine.sequential import Sequential
 from keras.layers import StringLookup
-from tensorflow_recommenders.layers.factorized_top_k import TopK
+from mlflow.pyfunc import PythonModel, PythonModelContext
 from tensorflow_recommenders.metrics import FactorizedTopK
 from tensorflow_recommenders.models import Model
 from tensorflow_recommenders.tasks import Ranking, Retrieval
 
 from dbx_scalable_dl.data_provider import DataProvider
 
+DEFAULT_INFERENCE_RECOMMENDATIONS = 10
 
 class BasicModel(Model):
     def __init__(
@@ -46,9 +48,13 @@ class BasicModel(Model):
             ]
         )
 
+        self.user_lookup = StringLookup(
+            vocabulary=self.users_ids_as_numpy, mask_token=None
+        )
+
         self.user_model = Sequential(
             [
-                StringLookup(vocabulary=self.users_ids_as_numpy, mask_token=None),
+                self.user_lookup,
                 tf.keras.layers.Embedding(
                     len(self.users_ids_as_numpy) + 1, embedding_dimension
                 ),
@@ -99,7 +105,7 @@ class BasicModel(Model):
             ),
         )
 
-    def build_index(self) -> TopK:
+    def _build_index(self) -> tfrs.layers.factorized_top_k.BruteForce:
         bf_index = tfrs.layers.factorized_top_k.BruteForce(self.user_model)
         bf_index.index_from_dataset(
             self.product_ids_as_dataset.batch(100).map(
@@ -110,6 +116,10 @@ class BasicModel(Model):
             self.users_ids_as_numpy[[0]]
         )  # we need to trigger index at least once to make it serializable
         return bf_index
+
+    @property
+    def index(self) -> tfrs.layers.factorized_top_k.BruteForce:
+        return self._build_index()
 
     def compute_loss(
         self, features: Dict[Text, tf.Tensor], training=False
@@ -138,16 +148,26 @@ class InferenceModel(Model):
     def __init__(self, trained_model: BasicModel):
         super().__init__()
 
-        self.index = trained_model.build_index()
+        self.index = trained_model.index
         self.product_model = trained_model.product_model
         self.user_model = trained_model.user_model
         self.ranking_model = trained_model.ranking_model
 
+    @staticmethod
+    def preprocess_arguments(
+        inputs: Dict[str, np.ndarray]
+    ) -> Dict[Text, Union[tf.Tensor, int]]:
+        return {
+            "user_id": tf.reshape(tf.constant(inputs["user_id"]), (1, 1)),
+            "num_recommendations": int(inputs.get("num_recommendations", DEFAULT_INFERENCE_RECOMMENDATIONS)),
+        }
+
     def call(self, inputs: Dict[str, tf.Tensor], training=None, mask=None):
         # retrieval - limit required amount for ranking to subset of the N retrieved recommendations
-        user_id = tf.constant(inputs["user_id"])
-        num_recommendations = inputs.get("num_recommendations", 10)
-        _, product_ids = self.index(np.array([user_id]), num_recommendations)
+        user_id = inputs["user_id"]
+
+        num_recommendations = inputs["num_recommendations"]
+        _, product_ids = self.index(user_id, num_recommendations)
 
         # ranking - here we simply rank N best recommendations
 
@@ -165,7 +185,32 @@ class InferenceModel(Model):
             tf.concat([user_embeddings, product_embeddings], axis=1)
         )
 
-        # we squeeze both vectors and map them into a dictionary
-        _ratings = dict(zip(product_ids.numpy().squeeze(), ratings.numpy().squeeze()))
+        return product_ids, ratings
 
-        return _ratings
+
+class ServingModel(PythonModel):
+    def __init__(self):
+        super(ServingModel, self).__init__()
+        self._model: Optional[InferenceModel] = None
+
+    def load_context(self, context: PythonModelContext):
+        self._model: InferenceModel = tf.saved_model.load(
+            context.artifacts["model_instance"]
+        )
+
+    def predict(self, context, model_input: Dict[str, np.ndarray]):
+        logging.info(f"Received input vector: {model_input}")
+        logging.info(f"Input vector type {type(model_input)}")
+        product_ids, ratings = self._model(
+            InferenceModel.preprocess_arguments(model_input)
+        )
+        _prediction = dict(
+            zip(
+                [
+                    p.decode() for p in product_ids.numpy().squeeze()
+                ],  # to decode product id from bytes to string
+                ratings.numpy().squeeze(),
+            )
+        )
+        logging.info(f"Predicted {_prediction}")
+        return _prediction

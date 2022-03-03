@@ -1,19 +1,18 @@
 from typing import Callable, Dict, Optional
 
-import mlflow
-from pyspark.sql import DataFrame
-
-from dbx_scalable_dl.callbacks import MLflowLoggingCallback
-from dbx_scalable_dl.data_provider import DataProvider
-from dbx_scalable_dl.common import Job
-from dbx_scalable_dl.model import BasicModel
 import horovod.tensorflow as hvd
+import mlflow
 import tensorflow as tf
-from tensorflow_recommenders.models import Model
 from horovod.keras.callbacks import (
     BroadcastGlobalVariablesCallback,
     MetricAverageCallback,
 )
+from pyspark.sql import DataFrame
+
+from dbx_scalable_dl.callbacks import MLflowLoggingCallback
+from dbx_scalable_dl.common import Job
+from dbx_scalable_dl.data_provider import DataProvider
+from dbx_scalable_dl.models import BasicModel
 
 
 class ModelBuilderTask(Job):
@@ -48,7 +47,7 @@ class ModelBuilderTask(Job):
     @staticmethod
     def get_model(
         provider: DataProvider, optimizer_multiplier: Optional[int] = 1
-    ) -> Model:
+    ) -> BasicModel:
         model = BasicModel(
             rating_weight=1.0, retrieval_weight=1.0, data_provider=provider
         )

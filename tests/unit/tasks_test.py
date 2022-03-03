@@ -1,14 +1,11 @@
-import pathlib
-import shutil
 import tempfile
 import unittest
 from typing import Callable
 from unittest.mock import MagicMock
+
 import mlflow
 
-from delta import configure_spark_with_delta_pip
-from pyspark.sql import SparkSession
-
+from common import TestCaseWithEnvironment
 from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.tasks.data_loader import DataLoaderTask
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
@@ -20,26 +17,9 @@ class LocalRunner:
         main()
 
 
-class SampleJobUnitTest(unittest.TestCase):
+class SampleJobUnitTest(TestCaseWithEnvironment):
     def setUp(self):
-        self.test_dir = tempfile.TemporaryDirectory().name
         self.source_url = "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Gift_Cards_5.json.gz"
-        _builder = (
-            SparkSession.builder.master("local[1]")
-            .config("spark.default.parallelism", 1)
-            .config("spark.sql.shuffle.partitions", 1)
-            .config("spark.sql.adaptive.enabled", False)
-            .config("spark.hive.metastore.warehouse.dir", self.test_dir)
-            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-            .config(
-                "spark.sql.catalog.spark_catalog",
-                "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-            )
-        )
-        self.spark: SparkSession = configure_spark_with_delta_pip(
-            _builder
-        ).getOrCreate()
-        self.spark.sparkContext.setLogLevel("INFO")
 
     def test_data_loader(self):
         # feel free to add new methods to this magic mock to mock some particular functionality
@@ -68,23 +48,22 @@ class SampleJobUnitTest(unittest.TestCase):
         )
 
     def test_model_builder(self):
-        registry_uri = "sqlite://"
         experiment = "dbx_test_experiment"
         model_name = "dbx_scalable_ml_test"
-        with tempfile.TemporaryDirectory() as tracking_uri:
+        with tempfile.TemporaryDirectory() as cache_dir:
             builder_task = ModelBuilderTask(
                 spark=self.spark,
                 init_conf={
                     "batch_size": 100,
                     "database": "dbx_scalable_dl_demo",
                     "table": "ratings",
-                    "cache_dir": "file://" + self.test_dir,
+                    "cache_dir": "file://" + cache_dir,
                     "num_epochs": 1,
                     "model_name": model_name,
                     "mlflow": {
                         "experiment": experiment,
-                        "registry_uri": registry_uri,
-                        "tracking_uri": tracking_uri,
+                        "registry_uri": self.registry_uri,
+                        "tracking_uri": self.tracking_uri,
                     },
                 },
             )
@@ -98,16 +77,23 @@ class SampleJobUnitTest(unittest.TestCase):
                 builder_task.get_runner = MagicMock(return_value=LocalRunner())
                 builder_task.launch()
 
-                self.assertIsNotNone(mlflow.get_experiment_by_name(experiment))
-                _controller = ModelController(model_name)
-                self.assertRaises(
-                    Exception, _controller.get_latest_model_uri(stages=("Production",))
+                self.assertIsNotNone(
+                    mlflow.get_experiment_by_name(experiment), "experiment_exists"
                 )
-                self.assertIsNotNone(_controller.get_latest_model_uri(stages=("None",)))
 
-    def tearDown(self):
-        if pathlib.Path(self.test_dir).exists():
-            shutil.rmtree(self.test_dir)
+                _controller = ModelController(model_name)
+
+                self.assertRaises(
+                    Exception,
+                    _controller.get_latest_model_uri,
+                    stages=("Production",),
+                    msg="model_not_in_production",
+                )
+
+                self.assertIsNotNone(
+                    _controller.get_latest_model_uri(stages=("None",)),
+                    msg="model_in_none",
+                )
 
 
 if __name__ == "__main__":
