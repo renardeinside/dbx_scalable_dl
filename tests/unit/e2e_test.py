@@ -4,10 +4,12 @@ import tempfile
 import unittest
 from typing import Callable
 from unittest.mock import MagicMock
+import mlflow
 
 from delta import configure_spark_with_delta_pip
 from pyspark.sql import SparkSession
 
+from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.tasks.data_loader import DataLoaderTask
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
 from dbx_scalable_dl.utils import FileLoadingContext
@@ -66,32 +68,42 @@ class SampleJobUnitTest(unittest.TestCase):
         )
 
     def test_model_builder(self):
-        mlflow_uri = "sqlite:///mlruns.db"
-        builder_task = ModelBuilderTask(
-            spark=self.spark,
-            init_conf={
-                "batch_size": 100,
-                "database": "dbx_scalable_dl_demo",
-                "table": "ratings",
-                "cache_dir": "file://" + self.test_dir,
-                "num_epochs": 1,
-                "model_name": "dbx_scalable_ml_test",
-                "mlflow": {
-                    "experiment": "dbx_test_experiment",
-                    "registry_uri": mlflow_uri,
-                    "tracking_uri": mlflow_uri,
+        registry_uri = "sqlite://"
+        experiment = "dbx_test_experiment"
+        model_name = "dbx_scalable_ml_test"
+        with tempfile.TemporaryDirectory() as tracking_uri:
+            builder_task = ModelBuilderTask(
+                spark=self.spark,
+                init_conf={
+                    "batch_size": 100,
+                    "database": "dbx_scalable_dl_demo",
+                    "table": "ratings",
+                    "cache_dir": "file://" + self.test_dir,
+                    "num_epochs": 1,
+                    "model_name": model_name,
+                    "mlflow": {
+                        "experiment": experiment,
+                        "registry_uri": registry_uri,
+                        "tracking_uri": tracking_uri,
+                    },
                 },
-            },
-        )
+            )
 
-        with FileLoadingContext(self.source_url) as output_path:
-            raw = DataLoaderTask._extract(self.spark, output_path)
-            _df = DataLoaderTask._transform(raw)
-            _df.count()
+            with FileLoadingContext(self.source_url) as output_path:
+                raw = DataLoaderTask._extract(self.spark, output_path)
+                _df = DataLoaderTask._transform(raw)
+                _df.count()
 
-            builder_task.get_ratings = MagicMock(return_value=_df)
-            builder_task.get_runner = MagicMock(return_value=LocalRunner())
-            builder_task.launch()
+                builder_task.get_ratings = MagicMock(return_value=_df)
+                builder_task.get_runner = MagicMock(return_value=LocalRunner())
+                builder_task.launch()
+
+                self.assertIsNotNone(mlflow.get_experiment_by_name(experiment))
+                _controller = ModelController(model_name)
+                self.assertRaises(
+                    Exception, _controller.get_latest_model_uri(stages=("Production",))
+                )
+                self.assertIsNotNone(_controller.get_latest_model_uri(stages=("None",)))
 
     def tearDown(self):
         if pathlib.Path(self.test_dir).exists():

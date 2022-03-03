@@ -1,8 +1,7 @@
 import mlflow
-import numpy as np
 import tensorflow as tf
 
-from dbx_scalable_dl.inference import ModelRegistrator
+from controller import ModelController
 
 
 class MLflowLoggingCallback(tf.keras.callbacks.Callback):
@@ -18,4 +17,4 @@ class MLflowLoggingCallback(tf.keras.callbacks.Callback):
 
     def on_train_end(self, *_):
         with mlflow.start_run(nested=True):
-            ModelRegistrator().register_model(self.model, self.model_name)
+            ModelController(self.model_name).register_model(self.model)

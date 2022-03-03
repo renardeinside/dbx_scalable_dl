@@ -12,6 +12,9 @@ conda env create --file environment.yml
 HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.22.1"
 ```
 
+## TBD
+
+- add deployer job
 
 ## Resources
 
