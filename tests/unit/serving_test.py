@@ -165,14 +165,16 @@ class ServingTest(TestCaseWithEnvironment):
                 json={"inputs": {"user_id": [self.sample_uid]}},
             )
             self.assertEqual(default_response.status_code, 200)
-            self.assertEqual(len(default_response.json()), DEFAULT_INFERENCE_RECOMMENDATIONS)
+            self.assertEqual(
+                len(default_response.json()), DEFAULT_INFERENCE_RECOMMENDATIONS
+            )
 
             custom_response = session().post(
                 f"{endpoint_url}/invocations",
-                json={"inputs": {"user_id": [self.sample_uid], "num_recommendations": [5]}},
+                json={
+                    "inputs": {"user_id": [self.sample_uid], "num_recommendations": [5]}
+                },
             )
 
             self.assertEqual(custom_response.status_code, 200)
             self.assertEqual(len(custom_response.json()), 5)
-
-

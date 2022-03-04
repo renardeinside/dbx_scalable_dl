@@ -15,6 +15,7 @@ from dbx_scalable_dl.data_provider import DataProvider
 
 DEFAULT_INFERENCE_RECOMMENDATIONS = 10
 
+
 class BasicModel(Model):
     def __init__(
         self,
@@ -159,7 +160,9 @@ class InferenceModel(Model):
     ) -> Dict[Text, Union[tf.Tensor, int]]:
         return {
             "user_id": tf.reshape(tf.constant(inputs["user_id"]), (1, 1)),
-            "num_recommendations": int(inputs.get("num_recommendations", DEFAULT_INFERENCE_RECOMMENDATIONS)),
+            "num_recommendations": int(
+                inputs.get("num_recommendations", DEFAULT_INFERENCE_RECOMMENDATIONS)
+            ),
         }
 
     def call(self, inputs: Dict[str, tf.Tensor], training=None, mask=None):
