@@ -24,7 +24,7 @@ class ModelBuilderTask(Job):
     def _convert_to_row(data) -> Dict:
         return {"user_id": data[0], "product_id": data[1], "rating": data[2]}
 
-    def get_runner(self):
+    def get_runner(self):  # pragma: no cover
         from sparkdl import HorovodRunner  # noqa
 
         parallelism_level = self._get_parallelism_level()
@@ -37,7 +37,7 @@ class ModelBuilderTask(Job):
         mlflow.set_experiment(self.conf["mlflow"]["experiment"])
 
     @staticmethod
-    def _setup_gpu_properties():
+    def _setup_gpu_properties():  # pragma: no cover
         gpus = tf.config.experimental.list_physical_devices("GPU")
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)

@@ -6,7 +6,7 @@ INSTALL_REQUIRES = ["tensorflow-recommenders==0.6.0"]
 setup(
     name="dbx_scalable_dl",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    setup_requires=["wheel"],
+    setup_requires=["wheel", "dunamai"],
     install_requires=INSTALL_REQUIRES,
     version=__version__,
     description="",

@@ -13,7 +13,7 @@ from tensorflow_recommenders.tasks import Ranking, Retrieval
 
 from dbx_scalable_dl.data_provider import DataProvider
 
-DEFAULT_INFERENCE_RECOMMENDATIONS = 10
+NUM_DEFAULT_INFERENCE_RECOMMENDATIONS = 10
 
 
 class BasicModel(Model):
@@ -161,7 +161,7 @@ class InferenceModel(Model):
         return {
             "user_id": tf.reshape(tf.constant(inputs["user_id"]), (1, 1)),
             "num_recommendations": int(
-                inputs.get("num_recommendations", DEFAULT_INFERENCE_RECOMMENDATIONS)
+                inputs.get("num_recommendations", NUM_DEFAULT_INFERENCE_RECOMMENDATIONS)
             ),
         }
 
@@ -203,7 +203,6 @@ class ServingModel(PythonModel):
 
     def predict(self, context, model_input: Dict[str, np.ndarray]):
         logging.info(f"Received input vector: {model_input}")
-        logging.info(f"Input vector type {type(model_input)}")
         product_ids, ratings = self._model(
             InferenceModel.preprocess_arguments(model_input)
         )

@@ -81,7 +81,7 @@ class ModelController:
             raise Exception(
                 f"No model version found for model {self._model_name} with stages {stages}"
             )
-        else:
+        else:  # pragma: no cover
             mfs.deploy(
                 app_name=self._model_name,
                 model_uri=model_uri,

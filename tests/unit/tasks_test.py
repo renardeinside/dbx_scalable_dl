@@ -2,13 +2,14 @@ from typing import Callable
 from unittest.mock import MagicMock
 
 import mlflow
+import pytest
 from pyspark.sql import SparkSession
 
 from conftest import MlflowInfo
-from controller import ModelController
+from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.tasks.data_loader import DataLoaderTask
-from tasks.model_builder import ModelBuilderTask
-from utils import FileLoadingContext
+from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
+from dbx_scalable_dl.utils import FileLoadingContext
 
 
 class LocalRunner:
@@ -43,7 +44,7 @@ def test_data_loader(spark: SparkSession):
 
 
 def test_model_builder(
-        spark: SparkSession, mlflow_info: MlflowInfo, petastorm_cache_dir: str
+    spark: SparkSession, mlflow_info: MlflowInfo, petastorm_cache_dir: str
 ):
     experiment = "dbx_test_experiment"
     model_name = "dbx_scalable_ml_test"
@@ -81,3 +82,9 @@ def test_model_builder(
     assert _controller.get_latest_model_uri(stages=("Production",)) is None
 
     assert _controller.get_latest_model_uri(stages=("None",)) is not None
+
+    with pytest.raises(Exception):
+        _controller.deploy_model_to_sagemaker(
+            image_url="fake",
+            region="fake",
+        )
