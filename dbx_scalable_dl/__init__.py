@@ -1,3 +1,5 @@
-from dunamai import Version
+import dunamai as _dunamai
 
-__version__ = Version.from_git(latest_tag=True).base
+__version__ = _dunamai.get_version(
+    "dbx_scalable_dl", third_choice=_dunamai.Version.from_git
+).serialize()
