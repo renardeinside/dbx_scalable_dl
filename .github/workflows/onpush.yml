@@ -23,8 +23,8 @@ jobs:
 
     steps:
 
-      # conda setup
-      - uses: actions/checkout@v2
+      - name: checkout
+        uses: actions/checkout@v2
 
       - name: cache conda
         uses: actions/cache@v2
@@ -32,17 +32,22 @@ jobs:
           # Increase this value to reset cache if required
           CACHE_NUMBER: 0
         with:
-          path: ~/conda_pkgs_dir
+          path: |
+            ~/conda_pkgs_dir
+            ~/.cache/pip
           key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('environment.yml') }}
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('environment.yml') }}-${{ hashFiles('setup.py') }}
 
       - name: setup environment
-      - uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.python-version }}
           activate-environment: dbx_scalable_dl
           channel-priority: strict
           environment-file: environment.yml
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+
+      - name: install horovod
+        run: HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.22.1"
 
 
