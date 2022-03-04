@@ -22,7 +22,6 @@ jobs:
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
     steps:
-
       - name: checkout
         uses: actions/checkout@v2
 
@@ -48,7 +47,8 @@ jobs:
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       -name: verify pip
-       run: which pip
+        run: which pip
+
 #      - name: install horovod
 #        run: HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.24.0"
 
