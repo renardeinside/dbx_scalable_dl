@@ -47,7 +47,9 @@ jobs:
           environment-file: environment.yml
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
-      - name: install horovod
-        run: HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.22.1"
+      -name: verify pip
+       run: which pip
+#      - name: install horovod
+#        run: HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.24.0"
 
 
