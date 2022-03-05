@@ -26,7 +26,6 @@ RUN --mount=type=cache,target=$PIP_CACHE_DIR HOROVOD_WITH_TENSORFLOW=1 pip insta
 
 ADD . .
 
-# we're exposing this port for test runs
 RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install -e .
 
 
