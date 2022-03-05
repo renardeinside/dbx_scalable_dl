@@ -3,7 +3,6 @@ FROM condaforge/mambaforge:4.11.0-4
 ENV CONDA_CACHE_DIR=/opt/conda/pkgs
 ENV PIP_CACHE_DIR=/opt/pip/.cache
 ENV DEBIAN_FRONTEND=noninteractive
-ENV TEST_SERVING_MODEL_PORT=4040
 
 WORKDIR /app
 
@@ -28,7 +27,6 @@ RUN --mount=type=cache,target=$PIP_CACHE_DIR HOROVOD_WITH_TENSORFLOW=1 pip insta
 ADD . .
 
 # we're exposing this port for test runs
-EXPOSE $TEST_SERVING_MODEL_PORT
 RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install -e .
 
 
