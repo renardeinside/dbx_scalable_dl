@@ -6,6 +6,8 @@ on:
       - '**'
     tags-ignore:
       - 'v*' # this tag type is used for release pipelines
+    paths-ignore:
+      - 'README.rst'
 
 jobs:
   ci-pipeline:
