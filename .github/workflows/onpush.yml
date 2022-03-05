@@ -25,13 +25,28 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: Set up QEMU
+      - name: set up QEMU
         uses: docker/setup-qemu-action@v1
 
-      - name: Set up Docker Buildx
+      - name: set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+
+      - name: set up docker registry
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u $GITHUB_ACTOR --password-stdin
+
+      - name: pull cached image
+        run: docker pull docker.pkg.github.com/$GITHUB_REPOSITORY/dbx_scalable_dl
+
+      - name: build test image
+        run: docker build -t dbx_scalable_dl --file=Dockerfile.dev . --cache-from=docker.pkg.github.com/$GITHUB_REPOSITORY/dbx_scalable_dl
 
       - name: run tests
         run: make test
+
+      - name: push the test image
+        run: |
+          docker tag dbx_scalable_dl docker.pkg.github.com/$GITHUB_REPOSITORY/dbx_scalable_dl
+          docker push docker.pkg.github.com/$GITHUB_REPOSITORY/dbx_scalable_dl
+
 
 
