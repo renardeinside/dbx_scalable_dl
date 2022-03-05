@@ -18,6 +18,7 @@ htmlcov/*
 
 # Caches
 .pytest_cache/
+.eggs/
 
 # VSCode
 .vscode/

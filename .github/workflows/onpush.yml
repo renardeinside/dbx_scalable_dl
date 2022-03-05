@@ -12,9 +12,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    strategy:
-      max-parallel: 4
-
     env:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
