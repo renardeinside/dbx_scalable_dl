@@ -2,15 +2,7 @@
 
 ## Local environment setup
 
-To set up the local environment, do the following:
-- create a new conda environment:
-```
-conda env create --file environment.yml 
-```
-- install Horovod separately via pip (it's important so the Horovod<>Tensorflow binding need specific env variable):
-```
-HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.24.0"
-```
+To easily setup local development environment, please use the `Dockerfile.dev`. 
 
 ## TBD
 

@@ -7,9 +7,13 @@ import numpy as np
 import pandas as pd
 import pytest
 from delta import configure_spark_with_delta_pip
+from flask import Flask
+from flask.testing import FlaskClient
+from mlflow.pyfunc.scoring_server import init
 from pyspark.sql import SparkSession
 from dataclasses import dataclass
 
+from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.callbacks import MLflowLoggingCallback
 from dbx_scalable_dl.data_provider import DataProvider
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
@@ -112,3 +116,23 @@ def registered_model_info(
         )
 
     yield RegisteredModelInfo(model_name, user_ids[0])
+
+
+@pytest.fixture()
+def serving_model(registered_model_info) -> Flask:
+    _model_uri = ModelController(registered_model_info.model_name).get_latest_model_uri(
+        stages=("None",)
+    )
+    pyfunc_model = mlflow.pyfunc.load_model(_model_uri)
+    app = init(pyfunc_model)
+    app.config.update(
+        {
+            "TESTING": True,
+        }
+    )
+    yield app
+
+
+@pytest.fixture(scope="function")
+def model_client(serving_model: Flask) -> FlaskClient:
+    return serving_model.test_client()

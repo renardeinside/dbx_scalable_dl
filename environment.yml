@@ -7,13 +7,11 @@ channels:
 dependencies:
   # environment deps
   - python=3.8.10
+  - openjdk=8.0.152
   - pip
   - fftw
   - libopenblas
   - libxml2
-  - ccache
-  - cmake
-  - make
   - cxx-compiler
   - mkl-include
   - mkl
@@ -36,6 +34,4 @@ dependencies:
       # env-related dependencies
       - pyspark==3.1.2
       - delta-spark==1.0.1
-      - tensorflow-cpu==2.8.0 # in Databricks 9.1 it's actually 2.6.0, but for the sake of compilation simplicity we use 2.8.0 here
-      - keras==2.8.0
       - petastorm==0.11.2

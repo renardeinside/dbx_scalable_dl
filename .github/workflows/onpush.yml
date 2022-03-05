@@ -14,45 +14,22 @@ jobs:
 
     strategy:
       max-parallel: 4
-      matrix:
-        python-version: [ 3.8.10 ]
 
     env:
       DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-
-    defaults:
-      run:
-        shell: bash -l {0}
+      DOCKER_BUILDKIT: 1
 
     steps:
 
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: cache conda
-        uses: actions/cache@v2
-        env:
-          # Increase this value to reset cache if required
-          CACHE_NUMBER: 0
-        with:
-          path: |
-            ~/conda_pkgs_dir
-            ~/.cache/pip
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{hashFiles('environment.yml') }}-${{ hashFiles('setup.py') }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-      - name: setup environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
-          activate-environment: dbx_scalable_dl
-          channel-priority: strict
-          environment-file: environment.yml
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-      - name: install horovod
-        run: HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.24.0"
 
 
