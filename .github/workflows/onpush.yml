@@ -28,22 +28,34 @@ jobs:
       - name: set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: set up docker registry
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u $GITHUB_ACTOR --password-stdin
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
-      - name: pull cached image
-        run: docker pull docker.pkg.github.com/renardeinside/dbx_scalable_dl/dbx_scalable_dl || true # true switch for case when there is no image to pull
-
-      - name: build test image
-        run: docker build -t dbx_scalable_dl --file=Dockerfile.dev . --cache-from=docker.pkg.github.com/renardeinside/dbx_scalable_dl/dbx_scalable_dl
+      - name: build
+        uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile.dev
+          context: .
+          push: false
+          tags: user/app:latest
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
       - name: run tests
-        run: make test
+        run: make ci-test
 
-      - name: push the test image
+      # Temp fix
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+      - name: Move cache
         run: |
-          docker tag dbx_scalable_dl docker.pkg.github.com/renardeinside/dbx_scalable_dl/dbx_scalable_dl
-          docker push docker.pkg.github.com/renardeinside/dbx_scalable_dl/dbx_scalable_dl
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: publish test coverage
         uses: codecov/codecov-action@v2
