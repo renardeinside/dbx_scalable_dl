@@ -86,5 +86,5 @@ def test_model_builder(
     with pytest.raises(Exception):
         _controller.deploy_model_to_sagemaker(
             image_url="fake",
-            region="fake",
+            region_name="fake",
         )

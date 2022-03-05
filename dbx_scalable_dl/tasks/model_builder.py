@@ -16,7 +16,7 @@ from dbx_scalable_dl.models import BasicModel
 
 
 class ModelBuilderTask(Job):
-    def _get_parallelism_level(self) -> int:
+    def _get_parallelism_level(self) -> int: # pragma: no cover
         tracker = self.spark.sparkContext._jsc.sc().statusTracker()  # noqa
         return len(tracker.getExecutorInfos()) - 1
 
