@@ -107,8 +107,9 @@ class BasicModel(Model):
         )
 
     def _build_index(self) -> tfrs.layers.factorized_top_k.BruteForce:
-        bf_index = tfrs.layers.factorized_top_k.BruteForce(self.user_model)
-        bf_index.index_from_dataset(
+        bf_index = tfrs.layers.factorized_top_k.BruteForce(
+            self.user_model
+        ).index_from_dataset(
             self.product_ids_as_dataset.batch(100).map(
                 lambda product_id: (product_id, self.product_model(product_id))
             )
