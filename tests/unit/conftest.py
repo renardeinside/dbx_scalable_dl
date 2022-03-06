@@ -1,6 +1,7 @@
 import pathlib
 import shutil
 import tempfile
+from typing import Callable
 
 import mlflow
 import numpy as np
@@ -13,10 +14,16 @@ from mlflow.pyfunc.scoring_server import init
 from pyspark.sql import SparkSession
 from dataclasses import dataclass
 
+from unittest.mock import MagicMock
+
 from dbx_scalable_dl.controller import ModelController
-from dbx_scalable_dl.callbacks import MLflowLoggingCallback
 from dbx_scalable_dl.data_provider import DataProvider
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
+
+
+class LocalRunner:
+    def run(self, main: Callable):
+        main()
 
 
 @dataclass
@@ -78,13 +85,17 @@ def petastorm_cache_dir() -> str:
         shutil.rmtree(cache_dir)
 
 
-@pytest.fixture(scope="class")
-def registered_model_info(
-    spark: SparkSession, mlflow_info: MlflowInfo, petastorm_cache_dir: str
-):
-    model_name = "dbx_scalable_dl_test_model"
+@pytest.fixture(scope="session")
+def user_ids() -> pd.Series:
     user_ids = [f"UID_{i:03}" for i in range(10)]
     user_ids = pd.Series(user_ids)
+    return user_ids
+
+
+@pytest.fixture(scope="session")
+def data_provider(
+    spark: SparkSession, user_ids: pd.Series, petastorm_cache_dir: str
+) -> DataProvider:
     product_ids = pd.Series([f"PID_{i:03}" for i in range(10)])
     ratings_size = 1000
 
@@ -101,19 +112,38 @@ def registered_model_info(
     provider = DataProvider(
         spark, ratings=_sdf, cache_dir=f"file://{petastorm_cache_dir}"
     )
+    return provider
 
-    _model = ModelBuilderTask.get_model(provider)
 
-    train_converter, _ = provider.get_train_test_converters()
+@pytest.fixture(scope="class")
+def registered_model_info(
+    spark: SparkSession,
+    mlflow_info: MlflowInfo,
+    data_provider: DataProvider,
+    user_ids: pd.Series,
+):
+    experiment = "dbx_test_experiment"
+    model_name = "dbx_scalable_ml_test"
 
-    with train_converter.make_tf_dataset(batch_size=100) as train_reader:
-        train_ds = train_reader.map(ModelBuilderTask._convert_to_row)
-        _model.fit(
-            train_ds,
-            epochs=1,
-            steps_per_epoch=2,
-            callbacks=[MLflowLoggingCallback(model_name)],
-        )
+    builder_task = ModelBuilderTask(
+        spark=spark,
+        init_conf={
+            "batch_size": 100,
+            "num_epochs": 1,
+            "model_name": model_name,
+            "mlflow": {
+                "experiment": experiment,
+                "registry_uri": mlflow_info.registry_uri,
+                "tracking_uri": mlflow_info.tracking_uri,
+            },
+        },
+    )
+
+    builder_task.get_ratings = MagicMock()
+    builder_task.get_provider = MagicMock(return_value=data_provider)
+    builder_task.get_runner = MagicMock(return_value=LocalRunner())
+    builder_task._get_databricks_api_info = MagicMock(return_value=None)
+    builder_task.launch()
 
     yield RegisteredModelInfo(model_name, user_ids[0])
 

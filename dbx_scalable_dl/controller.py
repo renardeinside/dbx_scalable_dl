@@ -30,7 +30,7 @@ class ModelController:
         _ = inference_model(
             InferenceModel.preprocess_arguments(
                 {
-                    "user_id": model.users_ids_as_numpy[[1]],
+                    "user_id": model._user_ids_numpy[[1]],
                 }
             )
         )  # we need to call the method for proper model serialization

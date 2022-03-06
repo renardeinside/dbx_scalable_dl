@@ -1,28 +1,52 @@
-from typing import Callable, Dict, Optional
+import json
+from typing import Callable
 
-import horovod.tensorflow as hvd
 import mlflow
 import tensorflow as tf
-from horovod.keras.callbacks import (
-    BroadcastGlobalVariablesCallback,
-    MetricAverageCallback,
-)
+from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
 
 from dbx_scalable_dl.callbacks import MLflowLoggingCallback
 from dbx_scalable_dl.common import Job
 from dbx_scalable_dl.data_provider import DataProvider
 from dbx_scalable_dl.models import BasicModel
+from dbx_scalable_dl.serialization import (
+    DatabricksApiInfo,
+    MlflowInfo,
+    RunnerFunctionInfo,
+    SerializableFunctionProvider,
+)
 
 
 class ModelBuilderTask(Job):
     def _get_parallelism_level(self) -> int:  # pragma: no cover
-        tracker = self.spark.sparkContext._jsc.sc().statusTracker()  # noqa
-        return len(tracker.getExecutorInfos()) - 1
+        """
+        There are 2 types of parallelism available:
+        - single node with one or multiple nodes - in this case we return -1
+        - multiple executors with one GPU
+        :return:
+        """
+        try:
+            raw_tags = self.spark.conf.get(
+                "spark.databricks.clusterUsageTags.clusterAllTags"
+            )
+        except Py4JJavaError:
+            self.logger.info(
+                "Clusters tags not found, this launch is not on the Databricks environment"
+            )
+            return -1
 
-    @staticmethod
-    def _convert_to_row(data) -> Dict:
-        return {"user_id": data[0], "product_id": data[1], "rating": data[2]}
+        sn_finder = [
+            item
+            for item in json.loads(raw_tags)
+            if item["key"] == "ResourceClass" and item["value"] == "SingleNode"
+        ]
+
+        if sn_finder:
+            return -1
+        else:
+            tracker = self.spark.sparkContext._jsc.sc().statusTracker()  # noqa
+            return len(tracker.getExecutorInfos()) - 1
 
     def get_runner(self):  # pragma: no cover
         from sparkdl import HorovodRunner  # noqa
@@ -31,76 +55,68 @@ class ModelBuilderTask(Job):
         runner = HorovodRunner(np=parallelism_level, driver_log_verbosity="all")
         return runner
 
-    def _setup_mlflow(self):
-        mlflow.set_registry_uri(self.conf["mlflow"].get("registry_uri", "databricks"))
-        mlflow.set_tracking_uri(self.conf["mlflow"].get("tracking_uri", "databricks"))
-        mlflow.set_experiment(self.conf["mlflow"]["experiment"])
-
-    @staticmethod
-    def _setup_gpu_properties():  # pragma: no cover
-        gpus = tf.config.experimental.list_physical_devices("GPU")
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        if gpus:
-            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], "GPU")
-
-    @staticmethod
-    def get_model(
-        provider: DataProvider, optimizer_multiplier: Optional[int] = 1
-    ) -> BasicModel:
-        model = BasicModel(
-            rating_weight=1.0, retrieval_weight=1.0, data_provider=provider
-        )
-        optimizer = hvd.DistributedOptimizer(
-            tf.keras.optimizers.Adagrad(0.01 * optimizer_multiplier)
-        )
-        model.compile(optimizer=optimizer, experimental_run_tf_function=False)
-
-        return model
-
-    def get_training_function(self, provider: DataProvider) -> Callable:
+    def get_training_function(self, info: RunnerFunctionInfo) -> Callable:
         self.logger.info("Preparing the training function")
-        train_converter, validation_converter = provider.get_train_test_converters()
 
         def runner():
+            """
+            Important - this function shall have no class-based dependencies that might be unserializable
+            :return:
+            """
+            import horovod.tensorflow as hvd
+            from horovod.keras.callbacks import (
+                BroadcastGlobalVariablesCallback,
+                MetricAverageCallback,
+            )
+
             hvd.init()
+            SerializableFunctionProvider.setup_gpu_properties()
+            SerializableFunctionProvider.setup_mlflow_properties(info.mlflow_info)
 
-            self._setup_gpu_properties()
-            self._setup_mlflow()
+            optimizer = hvd.DistributedOptimizer(
+                tf.keras.optimizers.Adagrad(0.01 * hvd.size())
+            )
+            model = BasicModel(
+                rating_weight=1.0,
+                retrieval_weight=1.0,
+                product_ids=info.product_ids,
+                user_ids=info.user_ids,
+            )
 
-            model = self.get_model(provider, hvd.size())
-
+            model.compile(optimizer=optimizer, experimental_run_tf_function=False)
             callbacks = [BroadcastGlobalVariablesCallback(0), MetricAverageCallback()]
 
-            with train_converter.make_tf_dataset(
-                batch_size=self.conf["batch_size"],
+            with info.train_converter.make_tf_dataset(
+                batch_size=info.batch_size,
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
-            ) as train_reader, validation_converter.make_tf_dataset(
-                batch_size=self.conf["batch_size"],
+            ) as train_reader, info.validation_converter.make_tf_dataset(
+                batch_size=info.batch_size,
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
             ) as validation_reader:
-                train_ds: tf.data.Dataset = train_reader.map(self._convert_to_row)
+                train_ds: tf.data.Dataset = train_reader.map(
+                    SerializableFunctionProvider.convert_to_row
+                )
                 validation_ds: tf.data.Dataset = validation_reader.map(
-                    self._convert_to_row
+                    SerializableFunctionProvider.convert_to_row
                 )
 
-                train_steps_per_epoch = len(train_converter) // (
-                    self.conf["batch_size"] * hvd.size()
+                train_steps_per_epoch = len(info.train_converter) // (
+                    info.batch_size * hvd.size()
                 )
                 validation_steps_per_epoch = max(
                     1,
-                    len(validation_converter) // (self.conf["batch_size"] * hvd.size()),
+                    len(info.validation_converter) // (info.batch_size * hvd.size()),
                 )
 
                 if hvd.rank() == 0:
-                    logging_callback = MLflowLoggingCallback(self.conf["model_name"])
+                    logging_callback = MLflowLoggingCallback(info.model_name)
                     callbacks.append(logging_callback)
 
                 model.fit(
                     train_ds,
-                    epochs=self.conf["num_epochs"],
+                    epochs=info.num_epochs,
                     steps_per_epoch=train_steps_per_epoch,
                     validation_steps=validation_steps_per_epoch,
                     validation_data=validation_ds,
@@ -112,15 +128,56 @@ class ModelBuilderTask(Job):
     def get_ratings(self) -> DataFrame:
         return self.spark.table(f"{self.conf['database']}.{self.conf['table']}")
 
+    def get_provider(self, ratings: DataFrame) -> DataProvider:
+        return DataProvider(self.spark, ratings, self.conf["cache_dir"])
+
+    def _get_databricks_api_info(self) -> DatabricksApiInfo:  # pragma: no cover
+        host = (
+            self.dbutils.notebook.entry_point.getDbutils()
+            .notebook()
+            .getContext()
+            .apiUrl()
+            .getOrElse(None)
+        )
+        token = (
+            self.dbutils.notebook.entry_point.getDbutils()
+            .notebook()
+            .getContext()
+            .apiToken()
+            .getOrElse(None)
+        )
+        return DatabricksApiInfo(host=host, token=token)
+
+    def prepare_info(self, provider: DataProvider) -> RunnerFunctionInfo:
+        train_converter, validation_converter = provider.get_train_test_converters()
+        _info = RunnerFunctionInfo(
+            batch_size=self.conf["batch_size"],
+            model_name=self.conf["model_name"],
+            num_epochs=self.conf["num_epochs"],
+            product_ids=provider.dataset_to_numpy_array(
+                provider.get_unique_product_ids()
+            ),
+            user_ids=provider.dataset_to_numpy_array(provider.get_unique_user_ids()),
+            train_converter=train_converter,
+            validation_converter=validation_converter,
+            mlflow_info=MlflowInfo(
+                registry_uri=self.conf["mlflow"].get("registry_uri", "databricks"),
+                tracking_uri=self.conf["mlflow"].get("tracking_uri", "databricks"),
+                experiment=self.conf["mlflow"]["experiment"],
+                databricks_api_info=self._get_databricks_api_info(),
+            ),
+        )
+        return _info
+
     def launch(self):
         self.logger.info("Starting the model building job")
         ratings = self.get_ratings()
-        provider = DataProvider(self.spark, ratings, self.conf["cache_dir"])
+        provider = self.get_provider(ratings)
         runner = self.get_runner()
-        training_function = self.get_training_function(provider)
-        self._setup_mlflow()
-        with mlflow.start_run():
-            runner.run(training_function)
+        runner_info = self.prepare_info(provider)
+        training_function = self.get_training_function(runner_info)
+        mlflow.set_experiment(runner_info.mlflow_info.experiment)
+        runner.run(training_function)
 
 
 if __name__ == "__main__":

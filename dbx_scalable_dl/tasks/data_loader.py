@@ -22,7 +22,9 @@ class DataLoaderTask(Job):
         )
 
     def _save_data_to_table(self, source_url: str, output_table: str):
-        with FileLoadingContext(source_url) as output_path:
+        with FileLoadingContext(
+            source_url, self.conf["temp_directory_prefix"]
+        ) as output_path:
             raw = self._extract(self.spark, output_path)
             transformed = self._transform(raw)
             transformed.write.format("delta").mode("overwrite").saveAsTable(

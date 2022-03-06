@@ -11,8 +11,6 @@ from tensorflow_recommenders.metrics import FactorizedTopK
 from tensorflow_recommenders.models import Model
 from tensorflow_recommenders.tasks import Ranking, Retrieval
 
-from dbx_scalable_dl.data_provider import DataProvider
-
 NUM_DEFAULT_INFERENCE_RECOMMENDATIONS = 10
 
 
@@ -21,7 +19,8 @@ class BasicModel(Model):
         self,
         rating_weight: float,
         retrieval_weight: float,
-        data_provider: DataProvider,
+        product_ids: np.array,
+        user_ids: np.array,
     ) -> None:
         # We take the loss weights in the constructor: this allows us to instantiate
         # several model objects with different loss weights.
@@ -30,34 +29,32 @@ class BasicModel(Model):
 
         embedding_dimension = 32
 
-        self.product_ids_as_dataset = data_provider.get_unique_product_ids()
-        self.product_ids_as_numpy = data_provider.dataset_to_numpy_array(
-            self.product_ids_as_dataset
-        )
+        self._product_ids_numpy = product_ids
+        self._user_ids_numpy = user_ids
 
-        self.users_ids_as_numpy = data_provider.dataset_to_numpy_array(
-            data_provider.get_unique_user_ids()
+        self._product_ids_dataset = tf.data.Dataset.from_tensor_slices(
+            self._product_ids_numpy
         )
 
         # User and movie models.
         self.product_model = Sequential(
             [
-                StringLookup(vocabulary=self.product_ids_as_numpy, mask_token=None),
+                StringLookup(vocabulary=self._product_ids_numpy, mask_token=None),
                 tf.keras.layers.Embedding(
-                    len(self.product_ids_as_dataset) + 1, embedding_dimension
+                    len(self._product_ids_numpy) + 1, embedding_dimension
                 ),
             ]
         )
 
         self.user_lookup = StringLookup(
-            vocabulary=self.users_ids_as_numpy, mask_token=None
+            vocabulary=self._user_ids_numpy, mask_token=None
         )
 
         self.user_model = Sequential(
             [
                 self.user_lookup,
                 tf.keras.layers.Embedding(
-                    len(self.users_ids_as_numpy) + 1, embedding_dimension
+                    len(self._user_ids_numpy) + 1, embedding_dimension
                 ),
             ]
         )
@@ -80,9 +77,7 @@ class BasicModel(Model):
         )
         self.retrieval_task: Retrieval = Retrieval(
             metrics=FactorizedTopK(
-                candidates=self.product_ids_as_dataset.batch(128).map(
-                    self.product_model
-                )
+                candidates=self._product_ids_dataset.batch(128).map(self.product_model)
             )
         )
 
@@ -110,12 +105,12 @@ class BasicModel(Model):
         bf_index = tfrs.layers.factorized_top_k.BruteForce(
             self.user_model
         ).index_from_dataset(
-            self.product_ids_as_dataset.batch(100).map(
+            self._product_ids_dataset.batch(100).map(
                 lambda product_id: (product_id, self.product_model(product_id))
             )
         )
         _ = bf_index(
-            self.users_ids_as_numpy[[0]]
+            self._user_ids_numpy[[0]]
         )  # we need to trigger index at least once to make it serializable
         return bf_index
 

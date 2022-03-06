@@ -1,0 +1,4 @@
+data_url: "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Gift_Cards_5.json.gz"
+database: "dbx_scalable_dl_demo"
+table: "ratings"
+temp_directory_prefix: "/dbfs/tmp"

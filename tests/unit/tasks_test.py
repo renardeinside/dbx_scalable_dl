@@ -1,20 +1,14 @@
-from typing import Callable
 from unittest.mock import MagicMock
 
 import mlflow
 import pytest
 from pyspark.sql import SparkSession
 
-from conftest import MlflowInfo
+from conftest import MlflowInfo, LocalRunner
+from dbx_scalable_dl.data_provider import DataProvider
 from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.tasks.data_loader import DataLoaderTask
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
-from dbx_scalable_dl.utils import FileLoadingContext
-
-
-class LocalRunner:
-    def run(self, main: Callable):
-        main()
 
 
 test_data_source_url = (
@@ -27,6 +21,7 @@ def test_data_loader(spark: SparkSession):
         "data_url": test_data_source_url,
         "database": "dbx_scalable_dl_demo",
         "table": "ratings",
+        "temp_directory_prefix": None,
     }
 
     loader_task = DataLoaderTask(
@@ -44,7 +39,7 @@ def test_data_loader(spark: SparkSession):
 
 
 def test_model_builder(
-    spark: SparkSession, mlflow_info: MlflowInfo, petastorm_cache_dir: str
+    spark: SparkSession, mlflow_info: MlflowInfo, data_provider: DataProvider
 ):
     experiment = "dbx_test_experiment"
     model_name = "dbx_scalable_ml_test"
@@ -53,9 +48,6 @@ def test_model_builder(
         spark=spark,
         init_conf={
             "batch_size": 100,
-            "database": "dbx_scalable_dl_demo",
-            "table": "ratings",
-            "cache_dir": "file://" + petastorm_cache_dir,
             "num_epochs": 1,
             "model_name": model_name,
             "mlflow": {
@@ -66,14 +58,11 @@ def test_model_builder(
         },
     )
 
-    with FileLoadingContext(test_data_source_url) as output_path:
-        raw = DataLoaderTask._extract(spark, output_path)
-        _df = DataLoaderTask._transform(raw)
-        _df.count()
-
-        builder_task.get_ratings = MagicMock(return_value=_df)
-        builder_task.get_runner = MagicMock(return_value=LocalRunner())
-        builder_task.launch()
+    builder_task.get_ratings = MagicMock()
+    builder_task.get_provider = MagicMock(return_value=data_provider)
+    builder_task.get_runner = MagicMock(return_value=LocalRunner())
+    builder_task._get_databricks_api_info = MagicMock(return_value=None)
+    builder_task.launch()
 
     assert mlflow.get_experiment_by_name(experiment) is not None
 

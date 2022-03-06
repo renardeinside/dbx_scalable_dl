@@ -1,0 +1,8 @@
+batch_size: 128
+database: "dbx_scalable_dl_demo"
+table: "ratings"
+cache_dir: "file:///dbfs/tmp/petastorm/cache"
+num_epochs: 10
+model_name: "dbx_scalable_dl_demo"
+mlflow:
+  experiment: "/Shared/dbx_scalable_dl_demo"

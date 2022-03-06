@@ -1,0 +1,81 @@
+custom:
+  basic-cpu-cluster-props: &basic-cpu-cluster-props
+    spark_version: "9.1.x-cpu-ml-scala2.12"
+
+  basic-gpu-cluster-props: &basic-gpu-cluster-props
+    spark_version: "9.1.x-gpu-ml-scala2.12"
+
+  data-loader-cluster: &data-loader-cluster
+    new_cluster:
+      <<: *basic-cpu-cluster-props
+      num_workers: 0
+      driver_node_type_id: "i3.xlarge"
+      node_type_id: "i3.xlarge"
+      spark_conf:
+        "spark.master": "local[*, 4]"
+        "spark.databricks.cluster.profile": "singleNode"
+      aws_attributes:
+        first_on_demand: 1
+      custom_tags:
+        "ResourceClass": "SingleNode"
+
+  model-builder-cluster-single-node: &model-builder-cluster-single-node
+    new_cluster:
+      <<: *basic-gpu-cluster-props
+      spark_conf:
+        "spark.master": "local[*, 4]"
+        "spark.databricks.cluster.profile": "singleNode"
+      driver_instance_pool_name: dbx-scalable-dl-demo
+      instance_pool_name: dbx-scalable-dl-demo
+      num_workers: 0
+      custom_tags:
+        "ResourceClass": "SingleNode"
+
+  model-builder-cluster-multi-node: &model-builder-cluster-multi-node
+    new_cluster:
+      <<: *basic-gpu-cluster-props
+      driver_instance_pool_name: dbx-scalable-dl-demo
+      instance_pool_name: dbx-scalable-dl-demo
+      num_workers: 2
+
+  data-loader-launch: &data-loader-launch
+    spark_python_task:
+      python_file: "file://dbx_scalable_dl/tasks/data_loader.py"
+      parameters: [ "--conf-file", "file:fuse://conf/params/data_loader.yml" ]
+
+  model-builder-launch: &model-builder-launch
+    spark_python_task:
+      python_file: "file://dbx_scalable_dl/tasks/model_builder.py"
+      parameters: [ "--conf-file", "file:fuse://conf/params/model_builder.yml" ]
+
+# please note that we're using FUSE reference for config file, hence we're going to load this file using its local FS path
+environments:
+  default:
+    strict_path_adjustment_policy: true
+    jobs:
+
+      {% if (DBX_ENVIRONMENT == "production") %}
+      - name: "dbx_scalable_dl"
+        job_clusters:
+          - job_cluster_key: "data-loader"
+            <<: *data-loader-cluster
+          - job_cluster_key: "model-builder"
+            <<: *model-builder-cluster
+        tasks:
+          - task_key: "data-loader"
+            job_cluster_key: "data-loader"
+            <<: *data-loader-launch
+          - task_key: "model_builder"
+            depends_on:
+              - task_key: "data-loader"
+            job_cluster_key: "model-builder"
+            <<: *model-builder-launch
+      {% else %}
+      - name: "dbx-scalable-dl-data-loader-dev"
+        <<: [ *data-loader-launch, *data-loader-cluster]
+      - name: "dbx-scalable-dl-model-builder-dev"
+        <<: [ *model-builder-launch, *model-builder-cluster-single-node ]
+      {% endif %}
+
+
+

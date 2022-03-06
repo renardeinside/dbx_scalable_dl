@@ -27,15 +27,15 @@ class DataProvider:
         )
         return tf.data.Dataset.from_tensor_slices(_values)
 
-    @staticmethod
-    def dataset_to_numpy_array(dataset) -> np.array:
-        return np.array(list(dataset.as_numpy_iterator()))
-
     def get_unique_product_ids(self) -> tf.data.Dataset:
         return self._get_unique_vector("product_id").cache()
 
     def get_unique_user_ids(self) -> tf.data.Dataset:
         return self._get_unique_vector("user_id").cache()
+
+    @staticmethod
+    def dataset_to_numpy_array(dataset) -> np.array:
+        return np.array(list(dataset.as_numpy_iterator()))
 
     def get_train_test_converters(
         self,
