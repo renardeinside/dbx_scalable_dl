@@ -55,6 +55,8 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
+      - name: list images
+        run: docker images
 
       - name: run tests
         run: docker run ghcr.io/renardeinside/dbx_scalable_dl:latest date
