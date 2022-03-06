@@ -39,11 +39,12 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: build
-        run: docker build \
-          --cache-from type=local,src=/tmp/.buildx-cache \
-          --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-          --tag dbx_scalable_dl \
-          --file Dockerfile.ci-test .
+        run: |
+          docker build \
+            --cache-from type=local,src=/tmp/.buildx-cache \
+            --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+            --tag dbx_scalable_dl \
+            --file Dockerfile.ci-test .
 
 #      - name: build
 #        uses: docker/build-push-action@v2
