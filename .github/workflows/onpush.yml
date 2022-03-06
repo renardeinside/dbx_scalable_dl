@@ -66,6 +66,6 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-#      - name: publish test coverage
-#        uses: codecov/codecov-action@v2
+      - name: publish test coverage
+        uses: codecov/codecov-action@v2
 
