@@ -48,18 +48,15 @@ jobs:
       - name: build
         uses: docker/build-push-action@v2
         with:
-          file: Dockerfile.ci-test
+          file: Dockerfile.dev
           context: .
           push: true
           tags: ghcr.io/renardeinside/dbx_scalable_dl:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-      - name: list images
-        run: docker images
-
-      - name: run tests
-        run: docker run ghcr.io/renardeinside/dbx_scalable_dl:latest date
+#      - name: run tests
+#        run: make ci-test
 
       # Temp fix
       # https://github.com/docker/build-push-action/issues/252
