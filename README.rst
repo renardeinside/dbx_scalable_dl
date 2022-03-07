@@ -24,16 +24,17 @@ Local environment setup
 
 To easily setup local development environment, please use the `Dockerfile.dev`. 
 
-For tests, please use:
+For local tests, please use:
 
 .. code-block::
 
-    make test
+    make local-test
 
 TBD
 ---
 
 - add deployer job
+- add metric collection
 
 Resources
 ---------

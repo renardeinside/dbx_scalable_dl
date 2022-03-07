@@ -41,4 +41,4 @@ class DataLoaderTask(Job):
 
 
 if __name__ == "__main__":
-    DataLoaderTask().launch()
+    DataLoaderTask().launch_with_shutdown_delay()

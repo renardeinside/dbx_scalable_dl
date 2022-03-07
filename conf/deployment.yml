@@ -5,38 +5,55 @@ custom:
   basic-gpu-cluster-props: &basic-gpu-cluster-props
     spark_version: "9.1.x-gpu-ml-scala2.12"
 
+  cloud-watch-config: &cloud-watch-config
+    init_scripts:
+      dbfs:
+        destination: "dbfs:/init_scripts/cloud-watch/cloud-watch-integration.sh"
+
   data-loader-cluster: &data-loader-cluster
     new_cluster:
-      <<: *basic-cpu-cluster-props
+      <<: [*basic-cpu-cluster-props, *cloud-watch-config]
+
       num_workers: 0
-      driver_node_type_id: "i3.xlarge"
-      node_type_id: "i3.xlarge"
+#      driver_node_type_id: "i3.xlarge"
+#      node_type_id: "i3.xlarge"
+      instance_pool_name: "itrusov-pool"
+      driver_instance_pool_name: "itrusov-pool"
+      cluster_log_conf:
+        dbfs:
+          destination: "dbfs:/cluster-logs"
       spark_conf:
         "spark.master": "local[*, 4]"
         "spark.databricks.cluster.profile": "singleNode"
       aws_attributes:
-        first_on_demand: 1
+#        first_on_demand: 1
+        instance_profile_name: !ENV ${AWS_INSTANCE_PROFILE_NAME}
       custom_tags:
         "ResourceClass": "SingleNode"
 
   model-builder-cluster-single-node: &model-builder-cluster-single-node
     new_cluster:
-      <<: *basic-gpu-cluster-props
+      <<: [*basic-gpu-cluster-props, *cloud-watch-config]
       spark_conf:
         "spark.master": "local[*, 4]"
         "spark.databricks.cluster.profile": "singleNode"
       driver_instance_pool_name: dbx-scalable-dl-demo
       instance_pool_name: dbx-scalable-dl-demo
+      aws_attributes:
+        instance_profile_name: !ENV ${AWS_INSTANCE_PROFILE_NAME}
       num_workers: 0
       custom_tags:
         "ResourceClass": "SingleNode"
 
   model-builder-cluster-multi-node: &model-builder-cluster-multi-node
     new_cluster:
-      <<: *basic-gpu-cluster-props
+      <<: [*basic-gpu-cluster-props, *cloud-watch-config]
       driver_instance_pool_name: dbx-scalable-dl-demo
       instance_pool_name: dbx-scalable-dl-demo
+      instance_profile_name: !ENV ${AWS_INSTANCE_PROFILE_NAME}
       num_workers: 2
+      aws_attributes:
+        instance_profile_name: !ENV ${AWS_INSTANCE_PROFILE_NAME}
 
   data-loader-launch: &data-loader-launch
     spark_python_task:
@@ -53,14 +70,12 @@ environments:
   default:
     strict_path_adjustment_policy: true
     jobs:
-
-      {% if (DBX_ENVIRONMENT == "production") %}
       - name: "dbx_scalable_dl"
         job_clusters:
           - job_cluster_key: "data-loader"
             <<: *data-loader-cluster
           - job_cluster_key: "model-builder"
-            <<: *model-builder-cluster
+            <<: *model-builder-cluster-single-node
         tasks:
           - task_key: "data-loader"
             job_cluster_key: "data-loader"
@@ -70,12 +85,10 @@ environments:
               - task_key: "data-loader"
             job_cluster_key: "model-builder"
             <<: *model-builder-launch
-      {% else %}
       - name: "dbx-scalable-dl-data-loader-dev"
         <<: [ *data-loader-launch, *data-loader-cluster]
       - name: "dbx-scalable-dl-model-builder-dev"
         <<: [ *model-builder-launch, *model-builder-cluster-single-node ]
-      {% endif %}
 
 
 

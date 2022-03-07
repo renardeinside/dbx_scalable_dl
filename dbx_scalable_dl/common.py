@@ -1,7 +1,8 @@
+import time
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from logging import Logger
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import yaml
 import pathlib
 from pyspark.sql import SparkSession
@@ -93,3 +94,20 @@ class Job(ABC):
         Main method of the job.
         :return:
         """
+
+    def launch_with_shutdown_delay(self, delay_seconds: Optional[int] = 15):
+        """
+        We wrap main launched into the delay to give some time to log collectors to export the logs
+        :param delay_seconds:
+        :return:
+        """
+        caught_exception = None
+
+        try:
+            self.launch()
+        except Exception as e:
+            caught_exception = e
+        finally:
+            time.sleep(delay_seconds)
+            if caught_exception:
+                raise caught_exception
