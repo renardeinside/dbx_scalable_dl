@@ -1,10 +1,11 @@
 {
   "agent": {
-    "metrics_collection_interval": 10,
+    "metrics_collection_interval": 1,
     "logfile": "/var/log/amazon-cloudwatch-agent.log",
-    "debug": true
+    "debug": false
   },
   "logs": {
+    "force_flush_interval": 1,
     "logs_collected": {
       "files": {
         "collect_list": [
@@ -28,7 +29,8 @@
     }
   },
   "metrics": {
-    "namespace": "{{ env("DB_CLUSTER_ID") }}",
+    "namespace": "databricks/{{ env("DB_CLUSTER_ID") }}",
+    "force_flush_interval": 1,
     "metrics_collected": {
       "statsd": {
         "service_address": ":8125"

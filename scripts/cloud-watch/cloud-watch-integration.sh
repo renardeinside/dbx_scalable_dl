@@ -57,20 +57,6 @@ EOF"
   echo 'configuring statsd spark props - done'
 }
 
-function configure_cloudwatch_agent() {
-  echo 'configuring cloudwatch agent'
-  pip install j2cli
-
-  if [ ! -z $DB_IS_DRIVER ] && [ $DB_IS_DRIVER = TRUE ] ; then
-    j2 /dbfs/init_scripts/cloud-watch/driver-agent.j2 > /tmp/amazon-cloudwatch-agent.json
-    sed -i '/^log4j.appender.publicFile.layout/ s/^/#/g' /home/ubuntu/databricks/spark/dbconf/log4j/driver/log4j.properties
-    sed -i '/log4j.appender.publicFile=com.databricks.logging.RedactionRollingFileAppender/a log4j.appender.publicFile.layout=com.databricks.labs.log.appenders.JsonLayout' /home/ubuntu/databricks/spark/dbconf/log4j/driver/log4j.properties
-  else
-    j2 /dbfs/init_scripts/cloud-watch/executor-agent.j2 > /tmp/amazon-cloudwatch-agent.json
-  fi
-  echo 'configuring cloudwatch agent - done'
-}
-
 function start_cloudwatch_agent() {
   echo 'starting the cloudwatch agent'
   sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/tmp/amazon-cloudwatch-agent.json -s
@@ -83,20 +69,36 @@ function start_cloudwatch_agent() {
 
 }
 
-if [ $DB_IS_DRIVER = TRUE ] ; then
-  echo 'running init script on the driver'
-
+function driver_setup() {
   # this is logging setup
   download_json_layout_jar
 
   # this is metrics setup
   configure_spark_metrics_namespace
 
+  # this is log configuration
+  sed -i '/^log4j.appender.publicFile.layout/ s/^/#/g' /home/ubuntu/databricks/spark/dbconf/log4j/driver/log4j.properties
+  sed -i '/log4j.appender.publicFile=com.databricks.logging.RedactionRollingFileAppender/a log4j.appender.publicFile.layout=com.databricks.labs.log.appenders.JsonLayout' /home/ubuntu/databricks/spark/dbconf/log4j/driver/log4j.properties
+}
+
+
+pip install j2cli
+
+if [[ $DB_IS_DRIVER = "TRUE" ]]; then
+  echo 'running init script on the driver'
+  driver_setup
+
   # cloudwatch-agent related settings
-  configure_cloudwatch_agent
+  j2 /dbfs/init_scripts/cloud-watch/driver-agent.j2 > /tmp/amazon-cloudwatch-agent.json
   install_cloudwatch_agent
   start_cloudwatch_agent
-
   echo 'running init script on the driver - done'
-fi
+else
+  echo 'running init script on the executor'
 
+  # cloudwatch-agent related settings
+  j2 /dbfs/init_scripts/cloud-watch/executor-agent.j2 > /tmp/amazon-cloudwatch-agent.json
+  install_cloudwatch_agent
+  start_cloudwatch_agent
+  echo 'running init script on the executor - done'
+fi
