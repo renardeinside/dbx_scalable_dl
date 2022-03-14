@@ -8,20 +8,11 @@ custom:
   data-loader-cluster: &data-loader-cluster
     new_cluster:
       <<: [ *basic-cpu-cluster-props ]
-
-      num_workers: 0
-      #      driver_node_type_id: "i3.xlarge"
-      #      node_type_id: "i3.xlarge"
-      instance_pool_name: "itrusov-pool"
-      driver_instance_pool_name: "itrusov-pool"
-      spark_conf:
-        "spark.master": "local[*, 4]"
-        "spark.databricks.cluster.profile": "singleNode"
+      num_workers: 2
+      driver_node_type_id: "i3.xlarge"
+      node_type_id: "i3.xlarge"
       aws_attributes:
-        #        first_on_demand: 1
-        instance_profile_name: !ENV ${AWS_INSTANCE_PROFILE_NAME}
-      custom_tags:
-        "ResourceClass": "SingleNode"
+        first_on_demand: 1
 
   model-builder-cluster-single-node: &model-builder-cluster-single-node
     new_cluster:

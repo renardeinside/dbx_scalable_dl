@@ -27,9 +27,9 @@ class DataLoaderTask(Job):
         ) as output_path:
             raw = self._extract(self.spark, output_path)
             transformed = self._transform(raw)
-            transformed.write.format("delta").mode("overwrite").saveAsTable(
-                output_table
-            )
+            transformed.write.format("delta").mode("overwrite").option(
+                "overwriteSchema", True
+            ).saveAsTable(output_table)
 
     def launch(self):
         self.logger.info("Starting the data loader job")

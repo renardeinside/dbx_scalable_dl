@@ -50,9 +50,6 @@ def spark() -> SparkSession:
         .config("spark.hive.metastore.warehouse.dir", warehouse_dir)
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config(
-            "spark.jars", "scripts/ganglia-export/generated/gangliaexport_2.12-1.0.jar"
-        )
-        .config(
             "spark.sql.catalog.spark_catalog",
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )

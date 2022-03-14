@@ -33,8 +33,6 @@ For local tests, please use:
 TBD
 ---
 
-- add metric collection:
-    - implement a daemon-like process to collect information from Gangilia and export it
 - add deployer job
 
 

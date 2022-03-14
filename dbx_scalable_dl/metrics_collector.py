@@ -139,8 +139,7 @@ class MetricsCollector:
         if resp.status_code == HTTPStatus.OK:
             tree: ET.Element = ET.fromstring(resp.text)
             hosts_info = [
-                self._collect_host_info(host)
-                for host in tree.findall(".//HOST")
+                self._collect_host_info(host) for host in tree.findall(".//HOST")
             ]
             return hosts_info
 
