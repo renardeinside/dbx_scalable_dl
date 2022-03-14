@@ -1,12 +1,14 @@
-import time
+import pathlib
+import sys
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from logging import Logger
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+
 import yaml
-import pathlib
 from pyspark.sql import SparkSession
-import sys
+
+from dbx_scalable_dl.metrics_collector import MetricsCollector
 
 
 # abstract class for jobs
@@ -95,19 +97,17 @@ class Job(ABC):
         :return:
         """
 
-    def launch_with_shutdown_delay(self, delay_seconds: Optional[int] = 15):
-        """
-        We wrap main launched into the delay to give some time to log collectors to export the logs
-        :param delay_seconds:
-        :return:
-        """
-        caught_exception = None
-
-        try:
+    def launch_with_metric_collection(self):
+        metric_props = self.conf.get("metric_collection")
+        if metric_props:
+            collector = MetricsCollector(
+                request_interval=metric_props.get("request_interval"),
+                logger=self.logger,
+            )
+            collector.start()
             self.launch()
-        except Exception as e:
-            caught_exception = e
-        finally:
-            time.sleep(delay_seconds)
-            if caught_exception:
-                raise caught_exception
+            collector.finish()
+            metrics_df = self.spark.createDataFrame(collector.metrics)
+            metrics_df.write.format("delta").mode("append").saveAsTable(
+                f"{metric_props['database']}.{metric_props['table']}"
+            )

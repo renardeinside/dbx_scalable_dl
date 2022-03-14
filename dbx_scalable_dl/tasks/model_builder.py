@@ -181,4 +181,4 @@ class ModelBuilderTask(Job):
 
 
 if __name__ == "__main__":
-    ModelBuilderTask().launch_with_shutdown_delay()
+    ModelBuilderTask().launch_with_metric_collection()

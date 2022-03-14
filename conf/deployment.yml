@@ -5,35 +5,27 @@ custom:
   basic-gpu-cluster-props: &basic-gpu-cluster-props
     spark_version: "9.1.x-gpu-ml-scala2.12"
 
-  cloud-watch-config: &cloud-watch-config
-    init_scripts:
-      dbfs:
-        destination: "dbfs:/init_scripts/cloud-watch/cloud-watch-integration.sh"
-
   data-loader-cluster: &data-loader-cluster
     new_cluster:
-      <<: [*basic-cpu-cluster-props, *cloud-watch-config]
+      <<: [ *basic-cpu-cluster-props ]
 
       num_workers: 0
-#      driver_node_type_id: "i3.xlarge"
-#      node_type_id: "i3.xlarge"
+      #      driver_node_type_id: "i3.xlarge"
+      #      node_type_id: "i3.xlarge"
       instance_pool_name: "itrusov-pool"
       driver_instance_pool_name: "itrusov-pool"
-      cluster_log_conf:
-        dbfs:
-          destination: "dbfs:/cluster-logs"
       spark_conf:
         "spark.master": "local[*, 4]"
         "spark.databricks.cluster.profile": "singleNode"
       aws_attributes:
-#        first_on_demand: 1
+        #        first_on_demand: 1
         instance_profile_name: !ENV ${AWS_INSTANCE_PROFILE_NAME}
       custom_tags:
         "ResourceClass": "SingleNode"
 
   model-builder-cluster-single-node: &model-builder-cluster-single-node
     new_cluster:
-      <<: [*basic-gpu-cluster-props, *cloud-watch-config]
+      <<: [ *basic-gpu-cluster-props ]
       spark_conf:
         "spark.master": "local[*, 4]"
         "spark.databricks.cluster.profile": "singleNode"
@@ -47,7 +39,7 @@ custom:
 
   model-builder-cluster-multi-node: &model-builder-cluster-multi-node
     new_cluster:
-      <<: [*basic-gpu-cluster-props, *cloud-watch-config]
+      <<: [ *basic-gpu-cluster-props ]
       driver_instance_pool_name: dbx-scalable-dl-demo
       instance_pool_name: dbx-scalable-dl-demo
       instance_profile_name: !ENV ${AWS_INSTANCE_PROFILE_NAME}
@@ -86,7 +78,7 @@ environments:
             job_cluster_key: "model-builder"
             <<: *model-builder-launch
       - name: "dbx-scalable-dl-data-loader-dev"
-        <<: [ *data-loader-launch, *data-loader-cluster]
+        <<: [ *data-loader-launch, *data-loader-cluster ]
       - name: "dbx-scalable-dl-model-builder-dev"
         <<: [ *model-builder-launch, *model-builder-cluster-single-node ]
 

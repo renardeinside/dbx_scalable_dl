@@ -2,3 +2,7 @@ data_url: "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Gift_Cards_
 database: "dbx_scalable_dl_demo"
 table: "ratings"
 temp_directory_prefix: "/dbfs/tmp"
+metric_collection:
+  request_interval: 10 # in seconds
+  database: "dbx_scalable_dl_demo"
+  table: "metrics"

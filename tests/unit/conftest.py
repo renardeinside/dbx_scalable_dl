@@ -1,7 +1,9 @@
 import pathlib
 import shutil
 import tempfile
+from dataclasses import dataclass
 from typing import Callable
+from unittest.mock import MagicMock
 
 import mlflow
 import numpy as np
@@ -10,11 +12,10 @@ import pytest
 from delta import configure_spark_with_delta_pip
 from flask import Flask
 from flask.testing import FlaskClient
+from http import HTTPStatus
 from mlflow.pyfunc.scoring_server import init
 from pyspark.sql import SparkSession
-from dataclasses import dataclass
-
-from unittest.mock import MagicMock
+from pytest_httpserver import HTTPServer
 
 from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.data_provider import DataProvider
@@ -48,6 +49,9 @@ def spark() -> SparkSession:
         .config("spark.sql.adaptive.enabled", False)
         .config("spark.hive.metastore.warehouse.dir", warehouse_dir)
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        .config(
+            "spark.jars", "scripts/ganglia-export/generated/gangliaexport_2.12-1.0.jar"
+        )
         .config(
             "spark.sql.catalog.spark_catalog",
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
@@ -166,3 +170,77 @@ def serving_model(registered_model_info) -> Flask:
 @pytest.fixture(scope="function")
 def model_client(serving_model: Flask) -> FlaskClient:
     return serving_model.test_client()
+
+
+@pytest.fixture(scope="function")
+def ganglia_server(httpserver: HTTPServer) -> HTTPServer:
+    resp_text = """<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"?>
+    <!DOCTYPE GANGLIA_XML [
+            <!ELEMENT GANGLIA_XML (GRID|CLUSTER|HOST)*>
+            <!ATTLIST GANGLIA_XML VERSION CDATA #REQUIRED>
+            <!ATTLIST GANGLIA_XML SOURCE CDATA #REQUIRED>
+            <!ELEMENT GRID (CLUSTER | GRID | HOSTS | METRICS)*>
+            <!ATTLIST GRID NAME CDATA #REQUIRED>
+            <!ATTLIST GRID AUTHORITY CDATA #REQUIRED>
+            <!ATTLIST GRID LOCALTIME CDATA #IMPLIED>
+            <!ELEMENT CLUSTER (HOST | HOSTS | METRICS)*>
+            <!ATTLIST CLUSTER NAME CDATA #REQUIRED>
+            <!ATTLIST CLUSTER OWNER CDATA #IMPLIED>
+            <!ATTLIST CLUSTER LATLONG CDATA #IMPLIED>
+            <!ATTLIST CLUSTER URL CDATA #IMPLIED>
+            <!ATTLIST CLUSTER LOCALTIME CDATA #REQUIRED>
+            <!ELEMENT HOST (METRIC)*>
+            <!ATTLIST HOST NAME CDATA #REQUIRED>
+            <!ATTLIST HOST IP CDATA #REQUIRED>
+            <!ATTLIST HOST LOCATION CDATA #IMPLIED>
+            <!ATTLIST HOST TAGS CDATA #IMPLIED>
+            <!ATTLIST HOST REPORTED CDATA #REQUIRED>
+            <!ATTLIST HOST TN CDATA #IMPLIED>
+            <!ATTLIST HOST TMAX CDATA #IMPLIED>
+            <!ATTLIST HOST DMAX CDATA #IMPLIED>
+            <!ATTLIST HOST GMOND_STARTED CDATA #IMPLIED>
+            <!ELEMENT METRIC (EXTRA_DATA*)>
+            <!ATTLIST METRIC NAME CDATA #REQUIRED>
+            <!ATTLIST METRIC VAL CDATA #REQUIRED>
+            <!ATTLIST METRIC TYPE (string | int8 | uint8 | int16 | uint16 | int32 | uint32 | float | double | timestamp) #REQUIRED>
+            <!ATTLIST METRIC UNITS CDATA #IMPLIED>
+            <!ATTLIST METRIC TN CDATA #IMPLIED>
+            <!ATTLIST METRIC TMAX CDATA #IMPLIED>
+            <!ATTLIST METRIC DMAX CDATA #IMPLIED>
+            <!ATTLIST METRIC SLOPE (zero | positive | negative | both | unspecified) #IMPLIED>
+            <!ATTLIST METRIC SOURCE (gmond) 'gmond'>
+            <!ELEMENT EXTRA_DATA (EXTRA_ELEMENT*)>
+            <!ELEMENT EXTRA_ELEMENT EMPTY>
+            <!ATTLIST EXTRA_ELEMENT NAME CDATA #REQUIRED>
+            <!ATTLIST EXTRA_ELEMENT VAL CDATA #REQUIRED>
+            <!ELEMENT HOSTS EMPTY>
+            <!ATTLIST HOSTS UP CDATA #REQUIRED>
+            <!ATTLIST HOSTS DOWN CDATA #REQUIRED>
+            <!ATTLIST HOSTS SOURCE (gmond | gmetad) #REQUIRED>
+            <!ELEMENT METRICS (EXTRA_DATA*)>
+            <!ATTLIST METRICS NAME CDATA #REQUIRED>
+            <!ATTLIST METRICS SUM CDATA #REQUIRED>
+            <!ATTLIST METRICS NUM CDATA #REQUIRED>
+            <!ATTLIST METRICS TYPE (string | int8 | uint8 | int16 | uint16 | int32 | uint32 | float | double | timestamp) #REQUIRED>
+            <!ATTLIST METRICS UNITS CDATA #IMPLIED>
+            <!ATTLIST METRICS SLOPE (zero | positive | negative | both | unspecified) #IMPLIED>
+            <!ATTLIST METRICS SOURCE (gmond) 'gmond'>
+            ]>
+    <GANGLIA_XML VERSION="3.6.0" SOURCE="gmetad">
+        <GRID NAME="unspecified" AUTHORITY="" LOCALTIME="">
+            <CLUSTER NAME="cluster" LOCALTIME="" OWNER="unspecified" LATLONG="unspecified" URL="unspecified">
+                <HOST NAME="some-host" IP="some-ip" REPORTED="1647112064" TN="17"
+                      TMAX="20" DMAX="0" LOCATION="unspecified" GMOND_STARTED="1647109757" TAGS="">
+                    <METRIC NAME="some-metric"
+                            VAL="0" TYPE="double" UNITS="milliseconds" TN="17" TMAX="60" DMAX="0" SLOPE="both"
+                            SOURCE="gmond">
+                    </METRIC>
+                </HOST>
+            </CLUSTER>
+        </GRID>
+    </GANGLIA_XML>
+    """
+    httpserver.expect_request("/", method="get").respond_with_data(
+        response_data=resp_text, status=HTTPStatus.OK
+    )
+    return httpserver
