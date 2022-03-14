@@ -17,11 +17,13 @@ class MetricInfo:
     metric_name: str
     metric_type: str
     metric_units: str
-    metric_value: float
+    metric_value: Optional[float]
 
 
 @dataclass
 class HostInfo:
+    cluster_name: str
+    cluster_id: str
     host_name: str
     host_ip: str
     reported_dttm: dt.datetime
@@ -50,6 +52,8 @@ class MetricsCollector:
         request_interval: Optional[int] = 5,
         total_requests: Optional[int] = None,
         logger: Optional[logging.Logger] = logging.getLogger(__name__),
+        cluster_name: Optional[str] = "local",
+        cluster_id: Optional[str] = "local",
     ):
         self._endpoint_url: str = endpoint_url
         self._conn = sqlite3.connect(":memory:", check_same_thread=False)
@@ -57,7 +61,9 @@ class MetricsCollector:
         self._thread: Optional[StoppableThread] = None
         self._request_interval = request_interval
         self._total_requests = total_requests
-        self.logger = logger
+        self._cluster_id = cluster_id
+        self._cluster_name = cluster_name
+        self._logger = logger
 
     @staticmethod
     def _metrics_to_df(metrics: List[HostInfo]) -> pd.DataFrame:
@@ -75,23 +81,23 @@ class MetricsCollector:
     def _schedule(self, request_interval: int):
         total_requests_made = 0
         while True:
-            self.logger.info(f"Collecting metrics, round number {total_requests_made}")
+            self._logger.info(f"Collecting metrics, round number {total_requests_made}")
             time.sleep(request_interval)
             metrics = self._collect_metrics()
             _df = self._metrics_to_df(metrics)
             self._append_to_storage(_df)
             total_requests_made += 1
-            self.logger.info(
+            self._logger.info(
                 f"Collecting metrics, round number {total_requests_made} - done"
             )
             if self._total_requests and total_requests_made >= self._total_requests:
-                self.logger.info(
+                self._logger.info(
                     "Total requests property is met, stopping metrics collection process"
                 )
                 break
 
     def start(self):
-        self.logger.info("Starting the metrics collection process in a thread")
+        self._logger.info("Starting the metrics collection process in a thread")
         self._thread = StoppableThread(
             target=self._schedule, args=(self._request_interval,)
         )
@@ -103,16 +109,22 @@ class MetricsCollector:
 
     @staticmethod
     def _collect_metric_info(metric_payload: ET.Element) -> MetricInfo:
+        try:
+            metric_value = float(metric_payload.get("VAL"))
+        except ValueError:
+            metric_value = None
+
         return MetricInfo(
             metric_payload.get("NAME"),
             metric_payload.get("TYPE"),
             metric_payload.get("UNITS"),
-            float(metric_payload.get("VAL")),
+            metric_value,
         )
 
-    @staticmethod
-    def _collect_host_info(host_payload: ET.Element):
+    def _collect_host_info(self, host_payload: ET.Element):
         return HostInfo(
+            cluster_name=self._cluster_name,
+            cluster_id=self._cluster_id,
             host_name=host_payload.get("NAME"),
             host_ip=host_payload.get("IP"),
             reported_dttm=dt.datetime.fromtimestamp(int(host_payload.get("REPORTED"))),
@@ -127,7 +139,7 @@ class MetricsCollector:
         if resp.status_code == HTTPStatus.OK:
             tree: ET.Element = ET.fromstring(resp.text)
             hosts_info = [
-                MetricsCollector._collect_host_info(host)
+                self._collect_host_info(host)
                 for host in tree.findall(".//HOST")
             ]
             return hosts_info

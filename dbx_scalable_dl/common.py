@@ -1,5 +1,6 @@
 import pathlib
 import sys
+import time
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from logging import Logger
@@ -100,14 +101,23 @@ class Job(ABC):
     def launch_with_metric_collection(self):
         metric_props = self.conf.get("metric_collection")
         if metric_props:
+
             collector = MetricsCollector(
                 request_interval=metric_props.get("request_interval"),
                 logger=self.logger,
+                cluster_name=self.spark.conf.get(
+                    "spark.databricks.clusterUsageTags.clusterName", "undefined"
+                ),
+                cluster_id=self.spark.conf.get(
+                    "spark.databricks.clusterUsageTags.clusterId", "undefined"
+                ),
             )
             collector.start()
             self.launch()
+            # give ganglia some time to generate new metric batch
+            time.sleep(metric_props.get("request_interval", 10))
             collector.finish()
+            metrics_table = f"{metric_props['database']}.{metric_props['table']}"
+            self.logger.info(f"dumping metrics into the provided table {metrics_table}")
             metrics_df = self.spark.createDataFrame(collector.metrics)
-            metrics_df.write.format("delta").mode("append").saveAsTable(
-                f"{metric_props['database']}.{metric_props['table']}"
-            )
+            metrics_df.write.format("delta").mode("append").saveAsTable(metrics_table)
