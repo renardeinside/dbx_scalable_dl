@@ -60,7 +60,6 @@ class ModelBuilderTask(Job):
 
         def single_node_runner():
             self.logger.info("Starting execution in a single node mode")
-            SerializableFunctionProvider.setup_gpu_properties()
             optimizer = tf.keras.optimizers.Adagrad(0.01)
             model = SerializableFunctionProvider.get_model(
                 info.product_ids, info.user_ids
