@@ -7,7 +7,7 @@ from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
 
 from dbx_scalable_dl.callbacks import MLflowLoggingCallback
-from dbx_scalable_dl.common import Job
+from dbx_scalable_dl.common import Job, MetricsWrapper
 from dbx_scalable_dl.data_provider import DataProvider
 from dbx_scalable_dl.models import BasicModel
 from dbx_scalable_dl.serialization import (
@@ -69,13 +69,17 @@ class ModelBuilderTask(Job):
                 MetricAverageCallback,
             )
 
+            info.logger.info("Initializing horovod")
             hvd.init()
+            info.logger.info("Initializing horovod - done")
+
             SerializableFunctionProvider.setup_gpu_properties()
             SerializableFunctionProvider.setup_mlflow_properties(info.mlflow_info)
 
             optimizer = hvd.DistributedOptimizer(
                 tf.keras.optimizers.Adagrad(0.01 * hvd.size())
             )
+
             model = BasicModel(
                 rating_weight=1.0,
                 retrieval_weight=1.0,
@@ -83,17 +87,25 @@ class ModelBuilderTask(Job):
                 user_ids=info.user_ids,
             )
 
+            info.logger.info(f"Total unique product ids: {len(info.product_ids)}")
+            info.logger.info(f"Total unique user ids: {len(info.user_ids)}")
+
+            info.logger.info("Compiling the model")
             model.compile(optimizer=optimizer, experimental_run_tf_function=False)
+            info.logger.info("Compiling the model - done")
+
             callbacks = [BroadcastGlobalVariablesCallback(0), MetricAverageCallback()]
 
             with info.train_converter.make_tf_dataset(
                 batch_size=info.batch_size,
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
+                shuffling_queue_capacity=0,
             ) as train_reader, info.validation_converter.make_tf_dataset(
                 batch_size=info.batch_size,
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
+                shuffling_queue_capacity=0,
             ) as validation_reader:
                 train_ds: tf.data.Dataset = train_reader.map(
                     SerializableFunctionProvider.convert_to_row
@@ -110,6 +122,20 @@ class ModelBuilderTask(Job):
                     len(info.validation_converter) // (info.batch_size * hvd.size()),
                 )
 
+                info.logger.info(f"Provided info object: {info}")
+
+                info.logger.info(
+                    f"Train information: "
+                    f" total size: {len(info.train_converter)}"
+                    f" steps per epoch: {train_steps_per_epoch}"
+                )
+
+                info.logger.info(
+                    f"Validation information: "
+                    f" total size: {len(info.validation_converter)}"
+                    f" steps per epoch: {validation_steps_per_epoch}"
+                )
+
                 if hvd.rank() == 0:
                     logging_callback = MLflowLoggingCallback(info.model_name)
                     callbacks.append(logging_callback)
@@ -121,6 +147,7 @@ class ModelBuilderTask(Job):
                     validation_steps=validation_steps_per_epoch,
                     validation_data=validation_ds,
                     callbacks=callbacks,
+                    verbose=True,
                 )
 
         return runner
@@ -181,4 +208,6 @@ class ModelBuilderTask(Job):
 
 
 if __name__ == "__main__":
-    ModelBuilderTask().launch_with_metric_collection()
+    job = ModelBuilderTask()
+    wrapper = MetricsWrapper(job)
+    wrapper.launch()

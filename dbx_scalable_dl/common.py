@@ -98,26 +98,32 @@ class Job(ABC):
         :return:
         """
 
-    def launch_with_metric_collection(self):
-        metric_props = self.conf.get("metric_collection")
-        if metric_props:
 
+class MetricsWrapper:
+    def __init__(self, job: Job):
+        self._job = job
+
+    def launch(self):
+        metric_props = self._job.conf.get("metric_collection")
+        if metric_props:
             collector = MetricsCollector(
                 request_interval=metric_props.get("request_interval"),
-                logger=self.logger,
-                cluster_name=self.spark.conf.get(
+                logger=self._job.logger,
+                cluster_name=self._job.spark.conf.get(
                     "spark.databricks.clusterUsageTags.clusterName", "undefined"
                 ),
-                cluster_id=self.spark.conf.get(
+                cluster_id=self._job.spark.conf.get(
                     "spark.databricks.clusterUsageTags.clusterId", "undefined"
                 ),
             )
             collector.start()
-            self.launch()
+            self._job.launch()
             # give ganglia some time to generate new metric batch
             time.sleep(metric_props.get("request_interval", 10))
             collector.finish()
             metrics_table = f"{metric_props['database']}.{metric_props['table']}"
-            self.logger.info(f"dumping metrics into the provided table {metrics_table}")
-            metrics_df = self.spark.createDataFrame(collector.metrics)
+            self._job.logger.info(
+                f"dumping metrics into the provided table {metrics_table}"
+            )
+            metrics_df = self._job.spark.createDataFrame(collector.metrics)
             metrics_df.write.format("delta").mode("append").saveAsTable(metrics_table)

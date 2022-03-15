@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Optional, Dict
 
@@ -30,6 +31,7 @@ class RunnerFunctionInfo:
     train_converter: SparkDatasetConverter
     validation_converter: SparkDatasetConverter
     mlflow_info: MlflowInfo
+    logger: Optional[logging.Logger] = logging.Logger(__name__)
 
 
 class SerializableFunctionProvider:

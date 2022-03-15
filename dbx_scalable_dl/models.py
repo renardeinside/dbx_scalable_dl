@@ -34,7 +34,7 @@ class BasicModel(Model):
 
         self._product_ids_dataset = tf.data.Dataset.from_tensor_slices(
             self._product_ids_numpy
-        )
+        ).cache()
 
         # User and movie models.
         self.product_model = Sequential(

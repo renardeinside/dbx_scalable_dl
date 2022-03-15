@@ -1,6 +1,6 @@
 from pyspark.sql import DataFrame, SparkSession
 
-from dbx_scalable_dl.common import Job
+from dbx_scalable_dl.common import Job, MetricsWrapper
 from dbx_scalable_dl.utils import FileLoadingContext
 
 
@@ -41,4 +41,6 @@ class DataLoaderTask(Job):
 
 
 if __name__ == "__main__":
-    DataLoaderTask().launch_with_metric_collection()
+    job = DataLoaderTask()
+    wrapper = MetricsWrapper(job)
+    wrapper.launch()
