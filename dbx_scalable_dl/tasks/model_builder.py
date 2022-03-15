@@ -253,7 +253,7 @@ class ModelBuilderTask(Job):
         if not runner:
             self.logger.info("Model builder is launched in a single-node context")
             training_function()
-        else:
+        else:  # pragma: no cover
             self.logger.info(
                 "Model builder is launched in a multi-node context, using horovod runner"
             )
