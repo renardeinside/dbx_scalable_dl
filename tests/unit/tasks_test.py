@@ -4,12 +4,12 @@ import mlflow
 import pytest
 from pyspark.sql import SparkSession
 
-from conftest import MlflowInfo, LocalRunner
+from conftest import MlflowInfo
 from dbx_scalable_dl.data_provider import DataProvider
 from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.tasks.data_loader import DataLoaderTask
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
-
+from dbx_scalable_dl.utils import LaunchEnvironment
 
 test_data_source_url = (
     "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Gift_Cards_5.json.gz"
@@ -59,8 +59,10 @@ def test_model_builder(
     )
 
     builder_task.get_ratings = MagicMock()
+    builder_task._get_launch_environment = MagicMock(
+        return_value=LaunchEnvironment.SINGLE_NODE
+    )
     builder_task.get_provider = MagicMock(return_value=data_provider)
-    builder_task.get_runner = MagicMock(return_value=LocalRunner())
     builder_task._get_databricks_api_info = MagicMock(return_value=None)
     builder_task.launch()
 

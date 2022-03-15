@@ -2,7 +2,7 @@ import pathlib
 import shutil
 import tempfile
 from dataclasses import dataclass
-from typing import Callable
+from http import HTTPStatus
 from unittest.mock import MagicMock
 
 import mlflow
@@ -12,7 +12,6 @@ import pytest
 from delta import configure_spark_with_delta_pip
 from flask import Flask
 from flask.testing import FlaskClient
-from http import HTTPStatus
 from mlflow.pyfunc.scoring_server import init
 from pyspark.sql import SparkSession
 from pytest_httpserver import HTTPServer
@@ -20,11 +19,7 @@ from pytest_httpserver import HTTPServer
 from dbx_scalable_dl.controller import ModelController
 from dbx_scalable_dl.data_provider import DataProvider
 from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
-
-
-class LocalRunner:
-    def run(self, main: Callable):
-        main()
+from dbx_scalable_dl.utils import LaunchEnvironment
 
 
 @dataclass
@@ -142,7 +137,9 @@ def registered_model_info(
 
     builder_task.get_ratings = MagicMock()
     builder_task.get_provider = MagicMock(return_value=data_provider)
-    builder_task.get_runner = MagicMock(return_value=LocalRunner())
+    builder_task._get_launch_environment = MagicMock(
+        return_value=LaunchEnvironment.SINGLE_NODE
+    )
     builder_task._get_databricks_api_info = MagicMock(return_value=None)
     builder_task.launch()
 
@@ -199,7 +196,6 @@ def ganglia_server(httpserver: HTTPServer) -> HTTPServer:
             <!ELEMENT METRIC (EXTRA_DATA*)>
             <!ATTLIST METRIC NAME CDATA #REQUIRED>
             <!ATTLIST METRIC VAL CDATA #REQUIRED>
-            <!ATTLIST METRIC TYPE (string | int8 | uint8 | int16 | uint16 | int32 | uint32 | float | double | timestamp) #REQUIRED>
             <!ATTLIST METRIC UNITS CDATA #IMPLIED>
             <!ATTLIST METRIC TN CDATA #IMPLIED>
             <!ATTLIST METRIC TMAX CDATA #IMPLIED>
@@ -218,7 +214,6 @@ def ganglia_server(httpserver: HTTPServer) -> HTTPServer:
             <!ATTLIST METRICS NAME CDATA #REQUIRED>
             <!ATTLIST METRICS SUM CDATA #REQUIRED>
             <!ATTLIST METRICS NUM CDATA #REQUIRED>
-            <!ATTLIST METRICS TYPE (string | int8 | uint8 | int16 | uint16 | int32 | uint32 | float | double | timestamp) #REQUIRED>
             <!ATTLIST METRICS UNITS CDATA #IMPLIED>
             <!ATTLIST METRICS SLOPE (zero | positive | negative | both | unspecified) #IMPLIED>
             <!ATTLIST METRICS SOURCE (gmond) 'gmond'>

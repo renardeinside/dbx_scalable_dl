@@ -19,10 +19,6 @@ RUN echo "conda activate dbx_scalable_dl" >> ~/.bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 
 ENV PATH="/opt/conda/envs/dbx_scalable_dl/bin:$PATH"
-# in Databricks 9.1 it's actually 2.6.0, but for the sake of compilation simplicity we use 2.8.0 here
-RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install tensorflow-cpu==2.8.0 keras==2.8.0
-RUN --mount=type=cache,target=$PIP_CACHE_DIR HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.24.0"
-
 
 ADD . .
 

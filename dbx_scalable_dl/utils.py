@@ -1,10 +1,15 @@
 import pathlib
 import tempfile
 from typing import Optional
-
+from enum import Enum
 import requests
 
 from tqdm import tqdm
+
+
+class LaunchEnvironment(Enum):
+    SINGLE_NODE = "SINGLE_NODE"
+    MULTI_NODE = "MULTI_NODE"
 
 
 class FileLoadingContext:

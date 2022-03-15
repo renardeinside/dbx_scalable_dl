@@ -1,24 +1,40 @@
 import json
-from typing import Callable
+from typing import Callable, Optional, Any
 
 import mlflow
 import tensorflow as tf
-from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
 
 from dbx_scalable_dl.callbacks import MLflowLoggingCallback
 from dbx_scalable_dl.common import Job, MetricsWrapper
 from dbx_scalable_dl.data_provider import DataProvider
-from dbx_scalable_dl.models import BasicModel
 from dbx_scalable_dl.serialization import (
     DatabricksApiInfo,
     MlflowInfo,
     RunnerFunctionInfo,
     SerializableFunctionProvider,
 )
+from dbx_scalable_dl.utils import LaunchEnvironment
 
 
 class ModelBuilderTask(Job):
+    def _get_launch_environment(self) -> LaunchEnvironment:  # pragma: no cover
+        raw_tags = self.spark.conf.get(
+            "spark.databricks.clusterUsageTags.clusterAllTags"
+        )
+
+        sn_tag_search = [
+            item
+            for item in json.loads(raw_tags)
+            if item["key"] == "ResourceClass" and item["value"] == "SingleNode"
+        ]
+        launch_environment = (
+            LaunchEnvironment.SINGLE_NODE
+            if sn_tag_search
+            else LaunchEnvironment.MULTI_NODE
+        )
+        return launch_environment
+
     def _get_parallelism_level(self) -> int:  # pragma: no cover
         """
         There are 2 types of parallelism available:
@@ -26,39 +42,67 @@ class ModelBuilderTask(Job):
         - multiple executors with one GPU
         :return:
         """
-        try:
-            raw_tags = self.spark.conf.get(
-                "spark.databricks.clusterUsageTags.clusterAllTags"
-            )
-        except Py4JJavaError:
-            self.logger.info(
-                "Clusters tags not found, this launch is not on the Databricks environment"
-            )
-            return -1
+        tracker = self.spark.sparkContext._jsc.sc().statusTracker()  # noqa
+        return len(tracker.getExecutorInfos()) - 1
 
-        sn_finder = [
-            item
-            for item in json.loads(raw_tags)
-            if item["key"] == "ResourceClass" and item["value"] == "SingleNode"
-        ]
+    def get_runner(self) -> Optional[Any]:
+        if self._get_launch_environment() == LaunchEnvironment.SINGLE_NODE:
+            return None
+        else:  # pragma: no cover
+            from sparkdl import HorovodRunner  # noqa
 
-        if sn_finder:
-            return -1
-        else:
-            tracker = self.spark.sparkContext._jsc.sc().statusTracker()  # noqa
-            return len(tracker.getExecutorInfos()) - 1
-
-    def get_runner(self):  # pragma: no cover
-        from sparkdl import HorovodRunner  # noqa
-
-        parallelism_level = self._get_parallelism_level()
-        runner = HorovodRunner(np=parallelism_level, driver_log_verbosity="all")
-        return runner
+            parallelism_level = self._get_parallelism_level()
+            runner = HorovodRunner(np=parallelism_level, driver_log_verbosity="all")
+            return runner
 
     def get_training_function(self, info: RunnerFunctionInfo) -> Callable:
         self.logger.info("Preparing the training function")
 
-        def runner():
+        def single_node_runner():
+            self.logger.info("Starting execution in a single node mode")
+            SerializableFunctionProvider.setup_gpu_properties()
+            optimizer = tf.keras.optimizers.Adagrad(0.01)
+            model = SerializableFunctionProvider.get_model(
+                info.product_ids, info.user_ids
+            )
+            model.compile(optimizer=optimizer, experimental_run_tf_function=False)
+
+            with info.train_converter.make_tf_dataset(
+                batch_size=info.batch_size,
+                shuffling_queue_capacity=0,
+            ) as train_reader, info.validation_converter.make_tf_dataset(
+                batch_size=info.batch_size,
+                shuffling_queue_capacity=0,
+            ) as validation_reader:
+                (
+                    train_ds,
+                    validation_ds,
+                ) = SerializableFunctionProvider.prepare_datasets(
+                    train_reader, validation_reader
+                )
+
+                train_steps_per_epoch = (
+                    SerializableFunctionProvider.get_steps_per_epoch(
+                        len(info.train_converter), info.batch_size
+                    )
+                )
+                validation_steps_per_epoch = (
+                    SerializableFunctionProvider.get_steps_per_epoch(
+                        len(info.validation_converter), info.batch_size
+                    )
+                )
+
+                model.fit(
+                    train_ds,
+                    epochs=info.num_epochs,
+                    steps_per_epoch=train_steps_per_epoch,
+                    validation_steps=validation_steps_per_epoch,
+                    validation_data=validation_ds,
+                    callbacks=[MLflowLoggingCallback(info.model_name)],
+                    verbose=True,
+                )
+
+        def distributed_runner():  # pragma: no cover
             """
             Important - this function shall have no class-based dependencies that might be unserializable
             :return:
@@ -80,17 +124,10 @@ class ModelBuilderTask(Job):
                 tf.keras.optimizers.Adagrad(0.01 * hvd.size())
             )
 
-            model = BasicModel(
-                rating_weight=1.0,
-                retrieval_weight=1.0,
-                product_ids=info.product_ids,
-                user_ids=info.user_ids,
-            )
-
-            info.logger.info(f"Total unique product ids: {len(info.product_ids)}")
-            info.logger.info(f"Total unique user ids: {len(info.user_ids)}")
-
             info.logger.info("Compiling the model")
+            model = SerializableFunctionProvider.get_model(
+                info.product_ids, info.user_ids
+            )
             model.compile(optimizer=optimizer, experimental_run_tf_function=False)
             info.logger.info("Compiling the model - done")
 
@@ -107,19 +144,22 @@ class ModelBuilderTask(Job):
                 shard_count=hvd.size(),
                 shuffling_queue_capacity=0,
             ) as validation_reader:
-                train_ds: tf.data.Dataset = train_reader.map(
-                    SerializableFunctionProvider.convert_to_row
-                )
-                validation_ds: tf.data.Dataset = validation_reader.map(
-                    SerializableFunctionProvider.convert_to_row
+                (
+                    train_ds,
+                    validation_ds,
+                ) = SerializableFunctionProvider.prepare_datasets(
+                    train_reader, validation_reader
                 )
 
-                train_steps_per_epoch = len(info.train_converter) // (
-                    info.batch_size * hvd.size()
+                train_steps_per_epoch = (
+                    SerializableFunctionProvider.get_steps_per_epoch(
+                        len(info.train_converter), info.batch_size, hvd.size()
+                    )
                 )
-                validation_steps_per_epoch = max(
-                    1,
-                    len(info.validation_converter) // (info.batch_size * hvd.size()),
+                validation_steps_per_epoch = (
+                    SerializableFunctionProvider.get_steps_per_epoch(
+                        len(info.validation_converter), info.batch_size, hvd.size()
+                    )
                 )
 
                 info.logger.info(f"Provided info object: {info}")
@@ -150,6 +190,12 @@ class ModelBuilderTask(Job):
                     verbose=True,
                 )
 
+        runner = (
+            single_node_runner
+            if self._get_launch_environment() == LaunchEnvironment.SINGLE_NODE
+            else distributed_runner
+        )
+
         return runner
 
     def get_ratings(self) -> DataFrame:
@@ -177,6 +223,7 @@ class ModelBuilderTask(Job):
 
     def prepare_info(self, provider: DataProvider) -> RunnerFunctionInfo:
         train_converter, validation_converter = provider.get_train_test_converters()
+
         _info = RunnerFunctionInfo(
             batch_size=self.conf["batch_size"],
             model_name=self.conf["model_name"],
@@ -204,7 +251,14 @@ class ModelBuilderTask(Job):
         runner_info = self.prepare_info(provider)
         training_function = self.get_training_function(runner_info)
         mlflow.set_experiment(runner_info.mlflow_info.experiment)
-        runner.run(training_function)
+        if not runner:
+            self.logger.info("Model builder is launched in a single-node context")
+            training_function()
+        else:
+            self.logger.info(
+                "Model builder is launched in a multi-node context, using horovod runner"
+            )
+            runner.run(training_function)
 
 
 if __name__ == "__main__":
