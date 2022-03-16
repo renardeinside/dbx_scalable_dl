@@ -16,6 +16,7 @@ This repository contains useful elements and building blocks for scalable Deep L
 
 .. |codecov| image:: https://img.shields.io/codecov/c/github/renardeinside/dbx_scalable_dl/main?style=for-the-badge&token=P9CiNFvruh
     :alt: Codecov branch
+    :target: https://app.codecov.io/gh/renardeinside/dbx_scalable_dl
 
 
 Local environment setup
