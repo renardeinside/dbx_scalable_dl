@@ -55,11 +55,11 @@ class SerializableFunctionProvider:
             tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], "GPU")
 
     @staticmethod
-    def setup_mlflow_properties(mlflow_info: MlflowInfo):
+    def setup_mlflow_properties(mlflow_info: MlflowInfo):  # pragma: no cover
         import os
 
         # this is required for a proper mlflow setup on the worker nodes
-        if mlflow_info.databricks_api_info:  # pragma: no cover
+        if mlflow_info.databricks_api_info:
             os.environ["DATABRICKS_HOST"] = mlflow_info.databricks_api_info.host
             os.environ["DATABRICKS_TOKEN"] = mlflow_info.databricks_api_info.token
 
