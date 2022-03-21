@@ -198,7 +198,13 @@ class ModelBuilderTask(Job):
         return runner
 
     def get_ratings(self) -> DataFrame:
-        return self.spark.table(f"{self.conf['database']}.{self.conf['table']}")
+        _df = self.spark.table(f"{self.conf['database']}.{self.conf['table']}")
+
+        limit = self.conf.get("dataset_size_limit")
+        if limit:
+            _df = _df.limit(limit)
+
+        return _df
 
     def get_provider(self, ratings: DataFrame) -> DataProvider:
         return DataProvider(self.spark, ratings, self.conf["cache_dir"])

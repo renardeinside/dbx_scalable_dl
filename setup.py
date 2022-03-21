@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 from dbx_scalable_dl import __version__
 
-# here we only mention the packages that are not available on
+# here we only mention the packages that are not available in Databricks ML Runtime
 INSTALL_REQUIRES = ["tensorflow-recommenders==0.6.0", "dunamai"]
 
 # setup_requires is set externally via pyproject.toml

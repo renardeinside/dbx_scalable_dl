@@ -4,6 +4,7 @@ table: "ratings"
 cache_dir: "file:///dbfs/tmp/petastorm/cache"
 num_epochs: 10
 model_name: "dbx_scalable_dl_demo"
+dataset_size_limit: 200000
 mlflow:
   experiment: "/Shared/dbx_scalable_dl_demo"
 metric_collection:
