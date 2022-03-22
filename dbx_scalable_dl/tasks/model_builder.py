@@ -97,11 +97,7 @@ class ModelBuilderTask(Job):
                     steps_per_epoch=train_steps_per_epoch,
                     validation_steps=validation_steps_per_epoch,
                     validation_data=validation_ds,
-                    callbacks=[
-                        MLflowLoggingCallback(
-                            info.model_name
-                        )
-                    ],
+                    callbacks=[MLflowLoggingCallback(info.model_name)],
                     verbose=True,
                 )
 
@@ -180,9 +176,7 @@ class ModelBuilderTask(Job):
                 )
 
                 if hvd.rank() == 0:
-                    logging_callback = MLflowLoggingCallback(
-                        info.model_name
-                    )
+                    logging_callback = MLflowLoggingCallback(info.model_name)
                     callbacks.append(logging_callback)
 
                 model.fit(
