@@ -104,7 +104,6 @@ class ModelBuilderTask(Job):
         def distributed_runner():  # pragma: no cover
             """
             Important - this function shall have no class-based dependencies that might be unserializable
-            :return:
             """
             import horovod.tensorflow as hvd
             from horovod.keras.callbacks import (
@@ -255,7 +254,11 @@ class ModelBuilderTask(Job):
         runner = self.get_runner()
         runner_info = self.prepare_info(provider)
         training_function = self.get_training_function(runner_info)
+
         mlflow.set_experiment(runner_info.mlflow_info.experiment)
+        mlflow.autolog(
+            disable=True
+        )  # we're disable autologger since we're collecting details in a callback
         if not runner:
             self.logger.info("Model builder is launched in a single-node context")
             training_function()

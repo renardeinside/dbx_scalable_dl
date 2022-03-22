@@ -18,8 +18,8 @@ custom:
   model-builder-cluster-single-node: &model-builder-cluster-single-node
     new_cluster:
       <<: [ *basic-gpu-cluster-props ]
-      driver_node_type_id: "g5.xlarge"
-      node_type_id: "g5.xlarge"
+      driver_node_type_id: "p3.2xlarge"
+      node_type_id: "p3.2xlarge"
       num_workers: 0
       spark_conf:
         "spark.databricks.cluster.profile": "singleNode"
