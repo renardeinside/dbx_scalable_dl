@@ -14,15 +14,12 @@ ci-test:
 	docker run -v $(PWD):/app ghcr.io/renardeinside/dbx_scalable_dl:latest pytest tests/unit --cov --cov-report html --cov-report xml
 
 
-# local here means that these actions are handly to launch from local machine
-local-model-builder-sn:
-	dbx deploy --job=dbx-scalable-dl-model-builder-sn --files-only
-	dbx launch --job=dbx-scalable-dl-model-builder-sn --as-run-submit
+model-builder-from-local:
+	echo "Launching model builder with size $(size)"
+	dbx deploy --job=dbx-scalable-dl-model-builder-$(size)x --files-only
+	dbx launch --job=dbx-scalable-dl-model-builder-$(size)x --as-run-submit
 
-local-model-builder-mn:
-	dbx deploy --job=dbx-scalable-dl-model-builder-mn --files-only
-	dbx launch --job=dbx-scalable-dl-model-builder-mn --as-run-submit
 
-local-data-loader:
+data-loader-from-local:
 	dbx deploy --job=dbx-scalable-dl-data-loader --files-only
 	dbx launch --job=dbx-scalable-dl-data-loader --as-run-submit

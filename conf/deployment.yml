@@ -5,6 +5,11 @@ custom:
   basic-gpu-cluster-props: &basic-gpu-cluster-props
     spark_version: "10.4.x-gpu-ml-scala2.12"
 
+  cluster-log-conf: &cluster-log-conf
+    cluster_log_conf:
+      dbfs:
+        destination: "dbfs:/cluster-logs"
+
   data-loader-cluster: &data-loader-cluster
     new_cluster:
       <<: [ *basic-cpu-cluster-props ]
@@ -15,9 +20,9 @@ custom:
         first_on_demand: 1
 
 
-  model-builder-cluster-single-node: &model-builder-cluster-single-node
+  model-builder-cluster-1x: &model-builder-cluster-1x
     new_cluster:
-      <<: [ *basic-gpu-cluster-props ]
+      <<: [ *basic-gpu-cluster-props, *cluster-log-conf ]
       driver_node_type_id: "g5.xlarge"
       node_type_id: "g5.xlarge"
       num_workers: 0
@@ -31,12 +36,34 @@ custom:
         ebs_volume_count: 1
         ebs_volume_size: 32
 
-  model-builder-cluster-multi-node: &model-builder-cluster-multi-node
+  model-builder-cluster-2x: &model-builder-cluster-2x
     new_cluster:
-      <<: [ *basic-gpu-cluster-props ]
+      <<: [ *basic-gpu-cluster-props, *cluster-log-conf ]
+      driver_node_type_id: "g5.xlarge"
+      node_type_id: "g5.xlarge"
+      num_workers: 2
+      aws_attributes:
+        first_on_demand: 1
+        ebs_volume_count: 1
+        ebs_volume_size: 32
+
+  model-builder-cluster-4x: &model-builder-cluster-4x
+    new_cluster:
+      <<: [ *basic-gpu-cluster-props, *cluster-log-conf ]
       driver_node_type_id: "g5.xlarge"
       node_type_id: "g5.xlarge"
       num_workers: 4
+      aws_attributes:
+        first_on_demand: 1
+        ebs_volume_count: 1
+        ebs_volume_size: 32
+
+  model-builder-cluster-8x: &model-builder-cluster-8x
+    new_cluster:
+      <<: [ *basic-gpu-cluster-props, *cluster-log-conf ]
+      driver_node_type_id: "g5.xlarge"
+      node_type_id: "g5.xlarge"
+      num_workers: 8
       aws_attributes:
         first_on_demand: 1
         ebs_volume_count: 1
@@ -64,9 +91,12 @@ environments:
     jobs:
       - name: "dbx-scalable-dl-data-loader"
         <<: [ *data-loader-launch, *data-loader-cluster ]
-      - name: "dbx-scalable-dl-model-builder-sn" # sn = single node
-        <<: [ *model-builder-launch-sn, *model-builder-cluster-single-node ]
-      - name: "dbx-scalable-dl-model-builder-mn" # mn = multi node
-        <<: [ *model-builder-launch-mn, *model-builder-cluster-multi-node ]
-
+      - name: "dbx-scalable-dl-model-builder-1x" # single node
+        <<: [ *model-builder-launch-sn, *model-builder-cluster-1x ]
+      - name: "dbx-scalable-dl-model-builder-2x" # 2 workers
+        <<: [ *model-builder-launch-mn, *model-builder-cluster-2x ]
+      - name: "dbx-scalable-dl-model-builder-4x" # 4 workers
+        <<: [ *model-builder-launch-mn, *model-builder-cluster-4x ]
+      - name: "dbx-scalable-dl-model-builder-8x" # 8 workers
+        <<: [ *model-builder-launch-mn, *model-builder-cluster-8x ]
 
