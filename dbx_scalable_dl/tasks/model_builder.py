@@ -201,7 +201,10 @@ class ModelBuilderTask(Job):
 
         limit = self.conf.get("dataset_size_limit")
         if limit:
-            _df = _df.limit(limit)
+            total_size = _df.count()
+            fraction = round(float(limit) / float(total_size), 10)
+            sampling_seed = 42
+            _df = _df.sample(fraction=fraction, seed=sampling_seed)
 
         return _df
 

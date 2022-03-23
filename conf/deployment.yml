@@ -18,8 +18,8 @@ custom:
   model-builder-cluster-single-node: &model-builder-cluster-single-node
     new_cluster:
       <<: [ *basic-gpu-cluster-props ]
-      driver_node_type_id: "p3.2xlarge"
-      node_type_id: "p3.2xlarge"
+      driver_node_type_id: "g5.xlarge"
+      node_type_id: "g5.xlarge"
       num_workers: 0
       spark_conf:
         "spark.databricks.cluster.profile": "singleNode"
@@ -27,16 +27,18 @@ custom:
       custom_tags:
         "ResourceClass": "SingleNode"
       aws_attributes:
+        first_on_demand: 1
         ebs_volume_count: 1
         ebs_volume_size: 32
 
   model-builder-cluster-multi-node: &model-builder-cluster-multi-node
     new_cluster:
       <<: [ *basic-gpu-cluster-props ]
-      driver_node_type_id: "g5.xlarge" # we choose the smallest and cheapest GPU since driver resources won't be used
-      node_type_id: "p3.2xlarge"
+      driver_node_type_id: "g5.xlarge"
+      node_type_id: "g5.xlarge"
       num_workers: 4
       aws_attributes:
+        first_on_demand: 1
         ebs_volume_count: 1
         ebs_volume_size: 32
 
