@@ -3,6 +3,7 @@ from typing import Callable, Optional, Any
 
 import mlflow
 import tensorflow as tf
+from pyspark import StorageLevel
 from pyspark.sql import DataFrame
 
 from dbx_scalable_dl.callbacks import MLflowLoggingCallback
@@ -52,6 +53,7 @@ class ModelBuilderTask(Job):
             from sparkdl import HorovodRunner  # noqa
 
             parallelism_level = self._get_parallelism_level()
+            self.logger.info(f"Defined parallelism level {parallelism_level}")
             runner = HorovodRunner(np=parallelism_level, driver_log_verbosity="all")
             return runner
 
@@ -110,6 +112,9 @@ class ModelBuilderTask(Job):
                 BroadcastGlobalVariablesCallback,
                 MetricAverageCallback,
             )
+            import mlflow
+
+            mlflow.autolog(disable=True)
 
             info.logger.info("Initializing horovod")
             hvd.init()
@@ -205,7 +210,10 @@ class ModelBuilderTask(Job):
             fraction = round(float(limit) / float(total_size), 10)
             sampling_seed = 42
             _df = _df.sample(fraction=fraction, seed=sampling_seed)
-
+            _df = _df.persist(StorageLevel.DISK_ONLY_2)
+            self.logger.info(
+                f"Persisting limit-based dataset, total records: {_df.count()}"
+            )
         return _df
 
     def get_provider(self, ratings: DataFrame) -> DataProvider:

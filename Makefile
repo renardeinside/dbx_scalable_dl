@@ -19,6 +19,12 @@ model-builder-from-local:
 	dbx deploy --job=dbx-scalable-dl-model-builder-$(size)x --files-only
 	dbx launch --job=dbx-scalable-dl-model-builder-$(size)x --as-run-submit
 
+model-builder-from-local-all:
+	model-builder-from-local size=1
+	model-builder-from-local size=2
+	model-builder-from-local size=4
+	model-builder-from-local size=8
+
 
 data-loader-from-local:
 	dbx deploy --job=dbx-scalable-dl-data-loader --files-only
