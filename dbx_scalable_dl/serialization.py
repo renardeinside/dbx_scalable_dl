@@ -86,7 +86,7 @@ class SerializableFunctionProvider:
     @staticmethod
     def get_model(product_ids: np.array, user_ids: np.array) -> BasicModel:
         _m = BasicModel(
-            rating_weight=1.0,
+            rating_weight=5.0,
             retrieval_weight=1.0,
             product_ids=product_ids,
             user_ids=user_ids,

@@ -42,7 +42,7 @@ class DataProvider:
 
     def get_train_test_converters(
         self,
-        weights: Optional[Tuple[float, float]] = (0.8, 0.2),
+        weights: Optional[Tuple[float, float]] = (0.7, 0.3),
         seed: Optional[int] = 42,
         num_partitions: Optional[int] = DEFAULT_NUM_PETASTORM_PARTITIONS,
     ) -> Tuple[SparkDatasetConverter, SparkDatasetConverter]:
