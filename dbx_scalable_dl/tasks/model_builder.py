@@ -141,11 +141,13 @@ class ModelBuilderTask(Job):
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
                 shuffling_queue_capacity=0,
+                num_epochs=0,
             ) as train_reader, info.validation_converter.make_tf_dataset(
                 batch_size=info.batch_size,
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
                 shuffling_queue_capacity=0,
+                num_epochs=0,
             ) as validation_reader:
                 (
                     train_ds,
@@ -237,7 +239,17 @@ class ModelBuilderTask(Job):
         return DatabricksApiInfo(host=host, token=token)
 
     def prepare_info(self, provider: DataProvider) -> RunnerFunctionInfo:
-        train_converter, validation_converter = provider.get_train_test_converters()
+
+        if (
+            self._get_launch_environment() == LaunchEnvironment.MULTI_NODE
+        ):  # pragma: no cover
+            num_partitions = (
+                provider.DEFAULT_NUM_PETASTORM_PARTITIONS * self._get_parallelism_level()
+            )
+        else:
+            num_partitions = provider.DEFAULT_NUM_PETASTORM_PARTITIONS
+
+        train_converter, validation_converter = provider.get_train_test_converters(num_partitions)
 
         _info = RunnerFunctionInfo(
             batch_size=self.conf["batch_size"],

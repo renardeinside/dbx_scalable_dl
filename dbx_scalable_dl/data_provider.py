@@ -7,6 +7,9 @@ from pyspark.sql import DataFrame, SparkSession
 
 
 class DataProvider:
+
+    DEFAULT_NUM_PETASTORM_PARTITIONS = 16
+
     def __init__(
         self,
         spark: SparkSession,
@@ -41,10 +44,13 @@ class DataProvider:
         self,
         weights: Optional[Tuple[float, float]] = (0.8, 0.2),
         seed: Optional[int] = 42,
+        num_partitions: Optional[int] = DEFAULT_NUM_PETASTORM_PARTITIONS,
     ) -> Tuple[SparkDatasetConverter, SparkDatasetConverter]:
         train_df, validation_df = self._ratings.select(
             "product_id", "user_id", "rating"
         ).randomSplit(list(weights), seed)
-        train_converter = make_spark_converter(train_df)
-        validation_converter = make_spark_converter(validation_df)
+        train_converter = make_spark_converter(train_df.repartition(num_partitions))
+        validation_converter = make_spark_converter(
+            validation_df.repartition(num_partitions)
+        )
         return train_converter, validation_converter
