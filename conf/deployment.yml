@@ -75,6 +75,6 @@ environments:
         <<: [ *model-builder-launch, *model-builder-cluster-2x ]
       - name: "dbx-scalable-dl-model-builder-4x" # 4 workers
         <<: [ *model-builder-launch, *model-builder-cluster-4x ]
-      - name: "dbx-scalable-dl-model-builder-8x" # 4 workers
+      - name: "dbx-scalable-dl-model-builder-8x" # 8 workers
         <<: [ *model-builder-launch, *model-builder-cluster-8x ]
 

@@ -249,7 +249,7 @@ class ModelBuilderTask(Job):
         else:
             num_partitions = provider.DEFAULT_NUM_PETASTORM_PARTITIONS
 
-        train_converter, validation_converter = provider.get_train_test_converters(num_partitions)
+        train_converter, validation_converter = provider.get_train_test_converters(num_partitions=num_partitions)
 
         _info = RunnerFunctionInfo(
             batch_size=self.conf["batch_size"],
