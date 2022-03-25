@@ -141,13 +141,11 @@ class ModelBuilderTask(Job):
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
                 shuffling_queue_capacity=0,
-                num_epochs=0,
             ) as train_reader, info.validation_converter.make_tf_dataset(
                 batch_size=info.batch_size,
                 cur_shard=hvd.rank(),
                 shard_count=hvd.size(),
                 shuffling_queue_capacity=0,
-                num_epochs=0,
             ) as validation_reader:
                 (
                     train_ds,
@@ -249,6 +247,7 @@ class ModelBuilderTask(Job):
         else:
             num_partitions = provider.DEFAULT_NUM_PETASTORM_PARTITIONS
 
+        self.logger.info(f"Provided number of partitions for petastorm: {num_partitions}")
         train_converter, validation_converter = provider.get_train_test_converters(num_partitions=num_partitions)
 
         _info = RunnerFunctionInfo(

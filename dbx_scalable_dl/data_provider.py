@@ -8,7 +8,7 @@ from pyspark.sql import DataFrame, SparkSession
 
 class DataProvider:
 
-    DEFAULT_NUM_PETASTORM_PARTITIONS = 16
+    DEFAULT_NUM_PETASTORM_PARTITIONS = 8
 
     def __init__(
         self,
