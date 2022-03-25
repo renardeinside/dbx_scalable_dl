@@ -1,4 +1,4 @@
-batch_size: 8192
+batch_size: 8912
 database: "dbx_scalable_dl_demo"
 table: "ratings"
 cache_dir: "file:///dbfs/tmp/petastorm/cache"

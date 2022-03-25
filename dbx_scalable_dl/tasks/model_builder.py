@@ -165,18 +165,18 @@ class ModelBuilderTask(Job):
                     )
                 )
 
-                info.logger.info(f"Provided info object: {info}")
-
                 info.logger.info(
-                    f"Train information: "
-                    f" total size: {len(info.train_converter)}"
-                    f" steps per epoch: {train_steps_per_epoch}"
+                    f"""Train information:
+                        total size: {len(info.train_converter)}
+                        steps per epoch: {train_steps_per_epoch}
+                    """
                 )
 
                 info.logger.info(
-                    f"Validation information: "
-                    f" total size: {len(info.validation_converter)}"
-                    f" steps per epoch: {validation_steps_per_epoch}"
+                    f"""Validation information:
+                        total size: {len(info.validation_converter)}
+                        steps per epoch: {validation_steps_per_epoch}
+                    """
                 )
 
                 if hvd.rank() == 0:
@@ -242,13 +242,18 @@ class ModelBuilderTask(Job):
             self._get_launch_environment() == LaunchEnvironment.MULTI_NODE
         ):  # pragma: no cover
             num_partitions = (
-                provider.DEFAULT_NUM_PETASTORM_PARTITIONS * self._get_parallelism_level()
+                provider.DEFAULT_NUM_PETASTORM_PARTITIONS
+                * self._get_parallelism_level()
             )
         else:
             num_partitions = provider.DEFAULT_NUM_PETASTORM_PARTITIONS
 
-        self.logger.info(f"Provided number of partitions for petastorm: {num_partitions}")
-        train_converter, validation_converter = provider.get_train_test_converters(num_partitions=num_partitions)
+        self.logger.info(
+            f"Provided number of partitions for petastorm: {num_partitions}"
+        )
+        train_converter, validation_converter = provider.get_train_test_converters(
+            num_partitions=num_partitions
+        )
 
         _info = RunnerFunctionInfo(
             batch_size=self.conf["batch_size"],
