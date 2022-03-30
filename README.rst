@@ -19,6 +19,16 @@ This repository contains useful elements and building blocks for scalable Deep L
     :target: https://app.codecov.io/gh/renardeinside/dbx_scalable_dl
 
 
+Dependencies
+------------
+
+The following libraries shall be installed before using :code:`nocturne`:
+
+* Spark 3.x
+* Tensorflow 2.x
+* :code:`horovod[spark, tensorflow]`
+* :code:`petastorm`
+
 Local environment setup
 -----------------------
 

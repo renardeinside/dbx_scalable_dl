@@ -1,8 +1,0 @@
-data_url: "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Books_5.json.gz"
-database: "dbx_scalable_dl_demo"
-table: "ratings"
-temp_directory_prefix: "/dbfs/tmp"
-metric_collection:
-  request_interval: 20 # in seconds
-  database: "dbx_scalable_dl_demo"
-  table: "metrics"

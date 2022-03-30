@@ -39,16 +39,21 @@ class TensorflowModelBuilder(ModelBuilder, ABC):
 
     @abstractmethod
     def get_optimizer(self, size_multiplier: Optional[int] = 1) -> Optimizer:
-        pass
+        """
+        this method shall return an optimizer instance.
+        Since hvd.size() might be used as a variable in the optimizer initialization, it's passed as a size_multiplier.
+        :param size_multiplier:
+        :return: keras.optimizers.Optimizer instance
+        """
 
-    def train_dataset_preprocessor(  # noqa
+    def train_dataset_preprocessor(  # noqa pragma: no cover
         self, dataset: tf.data.Dataset
-    ) -> tf.data.Dataset:
+    ) -> tf.data.Dataset:  # pragma: no cover
         return dataset
 
     def validation_dataset_preprocessor(  # noqa
         self, dataset: tf.data.Dataset
-    ) -> tf.data.Dataset:
+    ) -> tf.data.Dataset:  # pragma: no cover
         return dataset
 
     def __call__(self, *args, **kwargs):

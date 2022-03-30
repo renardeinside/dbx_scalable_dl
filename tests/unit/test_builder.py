@@ -47,7 +47,7 @@ def test_builder(spark: SparkSession, petastorm_cache_dir: str):
 
     train_converter, validation_converter = provider.get_train_validation_converters()
 
-    info = TensorflowModelBuilderInfo(
+    basic_info = TensorflowModelBuilderInfo(
         model=model,
         batch_size=100,
         num_epochs=1,
@@ -60,8 +60,19 @@ def test_builder(spark: SparkSession, petastorm_cache_dir: str):
             )
         ],
     )
-    train_function = TestTensorflowModelBuilder(spark, info)
+    train_function = TestTensorflowModelBuilder(spark, basic_info)
     train_function()
 
+    no_unique_callbacks = TensorflowModelBuilderInfo(
+        model=model,
+        batch_size=100,
+        num_epochs=1,
+        train_converter=train_converter,
+        validation_converter=validation_converter,
+        compile_arguments={"loss": "mean_absolute_error"},
+    )
+    no_callbacks_func = TestTensorflowModelBuilder(spark, no_unique_callbacks)
+    no_callbacks_func()
+
     with pytest.raises(Exception):
-        _ = UnserializableModelBuilder(spark, info)
+        _ = UnserializableModelBuilder(spark, basic_info)

@@ -69,7 +69,9 @@ class ModelBuilder(ABC):
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
-        pass
+        """
+        This is the main method that describes which actions shall be performed during the distributed training
+        """
 
     def verify_serialization(self):
         try:

@@ -4,28 +4,11 @@ ifneq (,$(wildcard ./.env))
 endif
 
 local-build:
-	docker build -t dbx_scalable_dl --file=Dockerfile.dev .
+	docker build -t nocturne --file=Dockerfile.dev .
 
 local-test: local-build
-	docker run -v $(PWD):/app dbx_scalable_dl pytest tests/unit --cov --cov-report html --cov-report xml
+	docker run -v $(PWD):/app nocturne pytest tests/unit --cov --cov-report html --cov-report xml
 
 ci-test:
-	docker pull ghcr.io/renardeinside/dbx_scalable_dl:latest
-	docker run -v $(PWD):/app ghcr.io/renardeinside/dbx_scalable_dl:latest pytest tests/unit --cov --cov-report html --cov-report xml
-
-
-model-builder-from-local:
-	echo "Launching model builder with size $(size)"
-	dbx deploy --job=dbx-scalable-dl-model-builder-$(size)x --files-only
-	dbx launch --job=dbx-scalable-dl-model-builder-$(size)x --as-run-submit
-
-model-builder-from-local-all:
-	model-builder-from-local size=1
-	model-builder-from-local size=2
-	model-builder-from-local size=4
-	model-builder-from-local size=8
-
-
-data-loader-from-local:
-	dbx deploy --job=dbx-scalable-dl-data-loader --files-only
-	dbx launch --job=dbx-scalable-dl-data-loader --as-run-submit
+	docker pull ghcr.io/renardeinside/nocturne:latest
+	docker run -v $(PWD):/app ghcr.io/renardeinside/nocturne:latest pytest tests/unit --cov --cov-report html --cov-report xml
