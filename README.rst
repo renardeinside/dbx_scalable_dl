@@ -29,17 +29,16 @@ The following libraries shall be installed before using :code:`nocturne`:
 * :code:`horovod[spark, tensorflow]`
 * :code:`petastorm`
 
-Local environment setup
------------------------
+Since packaging of these dependencies might be challenging, for local development, please use the `Dockerfile.dev`_.
 
-
-To easily setup local development environment, please use the `Dockerfile.dev`. 
-
-For local tests, please use:
+To install the library, run:
 
 .. code-block::
 
-    make local-test
+    pip install https://github.com/renardeinside/nocturne.git@<insert-version-tag-here>
+
+
+To add this library as a dependency, simply provide the URL above it in the :code:`setup.py` file or add it to your :code:`requirements.txt`.
 
 
 
@@ -49,3 +48,6 @@ Resources
 * `Horovod installation guide <https://horovod.readthedocs.io/en/stable/install_include.html>`_
 * `MLflow custom Python Models <https://mlflow.org/docs/1.6.0/python_api/mlflow.pyfunc.html>`_
 * `Amazon datasets <https://nijianmo.github.io/amazon/index.html>`_
+
+
+.. _Dockerfile.dev: Dockerfile.dev
