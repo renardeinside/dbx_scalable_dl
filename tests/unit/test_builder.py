@@ -13,7 +13,7 @@ from keras.callbacks import LambdaCallback
 import logging
 
 
-class TestTensorflowModelBuilder(TensorflowModelBuilder):
+class SampleTensorflowModelBuilder(TensorflowModelBuilder):
     def get_optimizer(self, size_multiplier: Optional[int] = 1) -> Optimizer:
         return tf.keras.optimizers.Adagrad(0.01 * size_multiplier)
 
@@ -28,7 +28,7 @@ class TestTensorflowModelBuilder(TensorflowModelBuilder):
         return self.train_dataset_preprocessor(dataset)
 
 
-class UnserializableModelBuilder(TestTensorflowModelBuilder):
+class UnserializableModelBuilder(SampleTensorflowModelBuilder):
     def __init__(self, spark: SparkSession, info: TensorflowModelBuilderInfo):
         self.spark = spark
         super().__init__(spark, info)
@@ -60,7 +60,7 @@ def test_builder(spark: SparkSession, petastorm_cache_dir: str):
             )
         ],
     )
-    train_function = TestTensorflowModelBuilder(spark, basic_info)
+    train_function = SampleTensorflowModelBuilder(spark, basic_info)
     train_function()
 
     no_unique_callbacks = TensorflowModelBuilderInfo(
@@ -71,7 +71,7 @@ def test_builder(spark: SparkSession, petastorm_cache_dir: str):
         validation_converter=validation_converter,
         compile_arguments={"loss": "mean_absolute_error"},
     )
-    no_callbacks_func = TestTensorflowModelBuilder(spark, no_unique_callbacks)
+    no_callbacks_func = SampleTensorflowModelBuilder(spark, no_unique_callbacks)
     no_callbacks_func()
 
     with pytest.raises(Exception):
