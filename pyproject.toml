@@ -1,2 +1,2 @@
 [build-system]
-requires = ["dunamai", "setuptools", "wheel"]
+requires = ["setuptools", "wheel"]

@@ -1,11 +1,11 @@
-Scalable Deep Learning on Databricks
-====================================
+Nocturne - utilities for Scalable Deep Learning with Spark, Horovod and Petastorm
+=================================================================================
 
-This repository contains useful elements and building blocks for scalable Deep Learning applications on Databricks.
+This repository contains useful elements and building blocks for scalable Deep Learning applications.
 
 |build| |codecov| |black|
 
-.. |build| image:: https://img.shields.io/github/workflow/status/renardeinside/dbx_scalable_dl/CI%20pipeline/main?style=for-the-badge
+.. |build| image:: https://img.shields.io/github/workflow/status/renardeinside/nocturne/CI%20pipeline/main?style=for-the-badge
     :alt: GitHub Workflow Status
     :target: https://github.com/renardeinside/dbx_scalable_dl/actions/workflows/onpush.yml
 
@@ -14,10 +14,20 @@ This repository contains useful elements and building blocks for scalable Deep L
     :target: https://github.com/psf/black
     :alt: We use black for formatting
 
-.. |codecov| image:: https://img.shields.io/codecov/c/github/renardeinside/dbx_scalable_dl/main?style=for-the-badge&token=P9CiNFvruh
+.. |codecov| image:: https://img.shields.io/codecov/c/github/renardeinside/nocturne/main?style=for-the-badge&token=P9CiNFvruh
     :alt: Codecov branch
-    :target: https://app.codecov.io/gh/renardeinside/dbx_scalable_dl
+    :target: https://app.codecov.io/gh/renardeinside/nocturne
 
+
+Dependencies
+------------
+
+The following libraries shall be installed before using :code:`nocturne`:
+
+* Apache Spark 3.x
+* Tensorflow 2.x
+* :code:`horovod[spark, tensorflow]`
+* :code:`petastorm`
 
 Local environment setup
 -----------------------
@@ -31,10 +41,6 @@ For local tests, please use:
 
     make local-test
 
-TBD
----
-
-- add deployer job
 
 
 Resources

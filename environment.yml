@@ -31,7 +31,6 @@ dependencies:
   - pip:
       # dev-related
       - dbx
-      - pytest-httpserver
       # env-related dependencies
       - pyspark==3.2.1
       - delta-spark==1.1.0
