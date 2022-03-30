@@ -9,7 +9,7 @@ from typing import Dict, Any
 import yaml
 from pyspark.sql import SparkSession
 
-from dbx_scalable_dl.metrics_collector import MetricsCollector
+from nocturne.metrics_collector import MetricsCollector
 
 
 # abstract class for jobs

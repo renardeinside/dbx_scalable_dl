@@ -6,16 +6,16 @@ import tensorflow as tf
 from pyspark import StorageLevel
 from pyspark.sql import DataFrame
 
-from dbx_scalable_dl.callbacks import MLflowLoggingCallback
-from dbx_scalable_dl.common import Job, MetricsWrapper
-from dbx_scalable_dl.data_provider import DataProvider
-from dbx_scalable_dl.serialization import (
+from nocturne.callbacks import MLflowLoggingCallback
+from nocturne.common import Job, MetricsWrapper
+from api.providers import DataProvider
+from nocturne.serialization import (
     DatabricksApiInfo,
     MlflowInfo,
     RunnerFunctionInfo,
     SerializableFunctionProvider,
 )
-from dbx_scalable_dl.utils import LaunchEnvironment
+from api.model_builder import LaunchEnvironment
 
 
 class ModelBuilderTask(Job):

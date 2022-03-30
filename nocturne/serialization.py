@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 from petastorm.spark import SparkDatasetConverter
 
-from dbx_scalable_dl.models import BasicModel
+from nocturne.models import BasicModel
 
 
 @dataclass

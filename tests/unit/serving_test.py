@@ -4,8 +4,8 @@ import mlflow.pyfunc
 from flask.testing import FlaskClient
 
 from conftest import RegisteredModelInfo
-from dbx_scalable_dl.controller import ModelController
-from dbx_scalable_dl.models import NUM_DEFAULT_INFERENCE_RECOMMENDATIONS
+from nocturne.controller import ModelController
+from nocturne.models import NUM_DEFAULT_INFERENCE_RECOMMENDATIONS
 
 
 def test_predict_call(registered_model_info: RegisteredModelInfo):

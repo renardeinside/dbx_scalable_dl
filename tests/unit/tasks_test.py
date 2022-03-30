@@ -5,11 +5,11 @@ import pytest
 from pyspark.sql import SparkSession
 
 from conftest import MlflowInfo
-from dbx_scalable_dl.data_provider import DataProvider
-from dbx_scalable_dl.controller import ModelController
-from dbx_scalable_dl.tasks.data_loader import DataLoaderTask
-from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
-from dbx_scalable_dl.utils import LaunchEnvironment
+from api.providers import DataProvider
+from nocturne.controller import ModelController
+from nocturne.tasks.data_loader import DataLoaderTask
+from nocturne.tasks.model_builder import ModelBuilderTask
+from api.model_builder import LaunchEnvironment
 
 test_data_source_url = (
     "http://deepyeti.ucsd.edu/jianmo/amazon/categoryFilesSmall/Gift_Cards_5.json.gz"

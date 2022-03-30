@@ -7,7 +7,7 @@ from mlflow.entities.model_registry import ModelVersion
 from mlflow.tracking import MlflowClient
 from typing import List, Optional, Tuple
 import mlflow.sagemaker as mfs
-from dbx_scalable_dl.models import BasicModel, InferenceModel, ServingModel
+from nocturne.models import BasicModel, InferenceModel, ServingModel
 
 
 class ModelController:

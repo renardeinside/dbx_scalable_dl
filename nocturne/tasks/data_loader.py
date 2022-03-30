@@ -1,7 +1,7 @@
 from pyspark.sql import DataFrame, SparkSession
 
-from dbx_scalable_dl.common import Job, MetricsWrapper
-from dbx_scalable_dl.utils import FileLoadingContext
+from nocturne.common import Job, MetricsWrapper
+from nocturne.utils import FileLoadingContext
 
 
 class DataLoaderTask(Job):

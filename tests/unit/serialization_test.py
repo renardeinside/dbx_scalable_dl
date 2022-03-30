@@ -5,14 +5,14 @@ import numpy as np
 from pyspark.cloudpickle.cloudpickle_fast import dump
 
 from conftest import MlflowInfo
-from dbx_scalable_dl.data_provider import DataProvider
-from dbx_scalable_dl.serialization import (
+from api.providers import DataProvider
+from nocturne.serialization import (
     MlflowInfo as SerializableMlflowInfo,
     RunnerFunctionInfo,
     SerializableFunctionProvider,
 )
-from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
-from dbx_scalable_dl.utils import LaunchEnvironment
+from nocturne.tasks.model_builder import ModelBuilderTask
+from api.model_builder import LaunchEnvironment
 
 
 def test_serializable(data_provider: DataProvider, mlflow_info: MlflowInfo):

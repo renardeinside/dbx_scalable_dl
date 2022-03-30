@@ -3,7 +3,7 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from http import HTTPStatus
-from unittest.mock import MagicMock
+from typing import Optional
 
 import mlflow
 import numpy as np
@@ -13,13 +13,10 @@ from delta import configure_spark_with_delta_pip
 from flask import Flask
 from flask.testing import FlaskClient
 from mlflow.pyfunc.scoring_server import init
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pytest_httpserver import HTTPServer
 
-from dbx_scalable_dl.controller import ModelController
-from dbx_scalable_dl.data_provider import DataProvider
-from dbx_scalable_dl.tasks.model_builder import ModelBuilderTask
-from dbx_scalable_dl.utils import LaunchEnvironment
+from nocturne.controller import ModelController
 
 
 @dataclass
@@ -81,20 +78,12 @@ def petastorm_cache_dir() -> str:
         shutil.rmtree(cache_dir)
 
 
-@pytest.fixture(scope="session")
-def user_ids() -> pd.Series:
-    user_ids = [f"UID_{i:03}" for i in range(10)]
-    user_ids = pd.Series(user_ids)
-    return user_ids
-
-
-@pytest.fixture(scope="session")
-def data_provider(
-    spark: SparkSession, user_ids: pd.Series, petastorm_cache_dir: str
-) -> DataProvider:
+@pytest.fixture()
+def sample_ratings_dataset(
+    spark: SparkSession, ratings_size: Optional[int] = 1000
+) -> DataFrame:
     product_ids = pd.Series([f"PID_{i:03}" for i in range(10)])
-    ratings_size = 1000
-
+    user_ids = pd.Series([f"UID_{i:03}" for i in range(10)])
     _pdf = pd.DataFrame().from_dict(
         {
             "user_id": user_ids.sample(n=ratings_size, replace=True).tolist(),
@@ -104,46 +93,7 @@ def data_provider(
     )
 
     _sdf = spark.createDataFrame(_pdf)
-
-    provider = DataProvider(
-        spark, ratings=_sdf, cache_dir=f"file://{petastorm_cache_dir}"
-    )
-    return provider
-
-
-@pytest.fixture(scope="class")
-def registered_model_info(
-    spark: SparkSession,
-    mlflow_info: MlflowInfo,
-    data_provider: DataProvider,
-    user_ids: pd.Series,
-):
-    experiment = "dbx_test_experiment"
-    model_name = "dbx_scalable_ml_test"
-
-    builder_task = ModelBuilderTask(
-        spark=spark,
-        init_conf={
-            "batch_size": 100,
-            "num_epochs": 1,
-            "model_name": model_name,
-            "mlflow": {
-                "experiment": experiment,
-                "registry_uri": mlflow_info.registry_uri,
-                "tracking_uri": mlflow_info.tracking_uri,
-            },
-        },
-    )
-
-    builder_task.get_ratings = MagicMock()
-    builder_task.get_provider = MagicMock(return_value=data_provider)
-    builder_task._get_launch_environment = MagicMock(
-        return_value=LaunchEnvironment.SINGLE_NODE
-    )
-    builder_task._get_databricks_api_info = MagicMock(return_value=None)
-    builder_task.launch()
-
-    yield RegisteredModelInfo(model_name, user_ids[0])
+    return _sdf
 
 
 @pytest.fixture()
