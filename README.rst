@@ -24,7 +24,7 @@ Dependencies
 
 The following libraries shall be installed before using :code:`nocturne`:
 
-* Spark 3.x
+* Apache Spark 3.x
 * Tensorflow 2.x
 * :code:`horovod[spark, tensorflow]`
 * :code:`petastorm`
