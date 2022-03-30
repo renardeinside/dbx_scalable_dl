@@ -50,7 +50,7 @@ jobs:
         with:
           file: Dockerfile.dev
           context: .
-          push: false
+          load: true
           tags: ghcr.io/renardeinside/nocturne:ci
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
