@@ -17,12 +17,14 @@ class TensorflowModelBuilderInfo(ModelBuilderInfo):
     global_callbacks: Optional[List[Callback]] = field(default_factory=list)
     unique_callbacks: Optional[List[Callback]] = field(default_factory=list)
     compile_arguments: Optional[Dict] = field(default_factory=dict)
+    train_converter_context_arguments: Optional[Dict] = field(default_factory=dict)
+    validation_converter_context_arguments: Optional[Dict] = field(default_factory=dict)
 
 
 class TensorflowModelBuilder(ModelBuilder, ABC):
     def __init__(self, spark: SparkSession, info: TensorflowModelBuilderInfo):
-        super().__init__(spark, info)
         self._info = info
+        super().__init__(spark, info)
 
     @staticmethod
     def setup_gpu_properties():  # pragma: no cover
@@ -73,10 +75,12 @@ class TensorflowModelBuilder(ModelBuilder, ABC):
             batch_size=self.batch_size,
             cur_shard=hvd.rank(),
             shard_count=hvd.size(),
+            **self._info.train_converter_context_arguments,
         ) as train_reader, self.validation_converter.make_tf_dataset(
             batch_size=self.batch_size,
             cur_shard=hvd.rank(),
             shard_count=hvd.size(),
+            **self._info.validation_converter_context_arguments,
         ) as validation_reader:
             train_steps_per_epoch = self.get_steps_per_epoch(
                 len(self.train_converter), hvd.size()

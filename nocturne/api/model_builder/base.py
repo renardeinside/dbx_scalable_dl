@@ -20,9 +20,16 @@ class ModelBuilderInfo:
 
 class ModelBuilder(ABC):
     def __init__(self, spark: SparkSession, info: ModelBuilderInfo):
+        """
+        Important - super init call shall always be the LAST command of the subclass initialization
+        so it can verify serializability of the whole code
+        :param spark: SparkSession, active Spark session
+        :param info:  ModelBuilderInfo, runtime model builder information
+        """
         self.num_executors: int = get_num_executors(spark)
         self.logger = logging.getLogger(self.__class__.__name__)
         self._info = info
+        self.verify_serialization()
 
     @property
     def train_converter(self) -> SparkDatasetConverter:
@@ -65,5 +72,17 @@ class ModelBuilder(ABC):
         pass
 
     def verify_serialization(self):
-        with tempfile.TemporaryFile() as t_file:
-            dump(self, t_file)
+        try:
+            with tempfile.TemporaryFile() as t_file:
+                dump(self, t_file)
+        except Exception as e:
+            self.logger.error(
+                f"""
+            Failed to serialize model builder functional class {self.__class__.__name__}.
+            This typically means that functional class contains dependencies that cannot be serialized, for instance:
+                - SparkSession
+                - any other runtime-dependent objects
+            Please check that these objects are not defined as class or object properties.
+            """
+            )
+            raise e

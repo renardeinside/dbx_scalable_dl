@@ -1,5 +1,6 @@
 from typing import Optional
 
+import pytest
 from keras.optimizer_v1 import Optimizer
 from pyspark.sql import SparkSession
 import tensorflow as tf
@@ -25,6 +26,12 @@ class TestTensorflowModelBuilder(TensorflowModelBuilder):
         self, dataset: tf.data.Dataset
     ) -> tf.data.Dataset:
         return self.train_dataset_preprocessor(dataset)
+
+
+class UnserializableModelBuilder(TestTensorflowModelBuilder):
+    def __init__(self, spark: SparkSession, info: TensorflowModelBuilderInfo):
+        self.spark = spark
+        super().__init__(spark, info)
 
 
 def test_builder(spark: SparkSession, petastorm_cache_dir: str):
@@ -55,3 +62,6 @@ def test_builder(spark: SparkSession, petastorm_cache_dir: str):
     )
     train_function = TestTensorflowModelBuilder(spark, info)
     train_function()
+
+    with pytest.raises(Exception):
+        _ = UnserializableModelBuilder(spark, info)

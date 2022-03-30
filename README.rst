@@ -1,11 +1,11 @@
-Scalable Deep Learning on Databricks
-====================================
+Nocturne - utilities for Scalable Deep Learning with Spark, Horovod and Petastorm
+=================================================================================
 
-This repository contains useful elements and building blocks for scalable Deep Learning applications on Databricks.
+This repository contains useful elements and building blocks for scalable Deep Learning applications.
 
 |build| |codecov| |black|
 
-.. |build| image:: https://img.shields.io/github/workflow/status/renardeinside/dbx_scalable_dl/CI%20pipeline/main?style=for-the-badge
+.. |build| image:: https://img.shields.io/github/workflow/status/renardeinside/nocturne/CI%20pipeline/main?style=for-the-badge
     :alt: GitHub Workflow Status
     :target: https://github.com/renardeinside/dbx_scalable_dl/actions/workflows/onpush.yml
 
@@ -31,10 +31,6 @@ For local tests, please use:
 
     make local-test
 
-TBD
----
-
-- add deployer job
 
 
 Resources
