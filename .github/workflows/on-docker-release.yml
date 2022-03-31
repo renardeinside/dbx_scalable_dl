@@ -44,7 +44,7 @@ jobs:
           file: docker/Dockerfile.base
           context: .
           load: true
-          tags: ghcr.io/renardeinside/nocturne-base:latest, ghcr.io/renardeinside/nocturne-base:{{ env.BASE_RELEASE_TAG }}
+          tags: ghcr.io/renardeinside/nocturne-base:latest, ghcr.io/renardeinside/nocturne-base:$BASE_RELEASE_TAG
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
