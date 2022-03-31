@@ -21,8 +21,8 @@ jobs:
 
       - name: Set env
         run: |
-          RELEASE_TAG=$(echo ${GITHUB_REF_NAME} | cut -f4 -d"/")
-          echo "RELEASE_TAG=ghcr.io/renardeinside/nocturne-base:${BASE_RELEASE_TAG}" >> $GITHUB_ENV
+          RELEASE_TAG_POSTFIX=$(echo ${GITHUB_REF_NAME} | cut -f4 -d"/")
+          echo "RELEASE_TAG=ghcr.io/renardeinside/nocturne-base:${RELEASE_TAG_POSTFIX}" >> $GITHUB_ENV
 
       - name: set up QEMU
         uses: docker/setup-qemu-action@v1
