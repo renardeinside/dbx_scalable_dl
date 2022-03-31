@@ -49,6 +49,7 @@ COPY pyproject.toml poetry.lock ./
 # Setting --without-hashes because of this issue: https://github.com/pypa/pip/issues/4995
 
 RUN --mount=type=cache,target=$PIP_CACHE_DIR poetry config virtualenvs.create false \
+                && poetry run pip install tensorflow==2.8.0 \
                 && poetry export --without-hashes -f requirements.txt \
                 |  HOROVOD_WITH_TENSORFLOW=1 poetry run pip install -r /dev/stdin
 
