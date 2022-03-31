@@ -21,8 +21,8 @@ jobs:
 
       - name: Set env
         run: |
-          BASE_RELEASE_TAG=$(echo ${GITHUB_REF_NAME} | cut -f4 -d"/")
-          echo "BASE_RELEASE_TAG=${BASE_RELEASE_TAG}" >> $GITHUB_ENV
+          RELEASE_TAG=$(echo ${GITHUB_REF_NAME} | cut -f4 -d"/")
+          echo "RELEASE_TAG=ghcr.io/renardeinside/nocturne-base:${BASE_RELEASE_TAG}" >> $GITHUB_ENV
 
       - name: set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -44,7 +44,7 @@ jobs:
           file: docker/Dockerfile.base
           context: .
           load: true
-          tags: ghcr.io/renardeinside/nocturne-base:latest, ghcr.io/renardeinside/nocturne-base:$BASE_RELEASE_TAG
+          tags: ghcr.io/renardeinside/nocturne-base:latest, ${{ env.RELEASE_TAG }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
