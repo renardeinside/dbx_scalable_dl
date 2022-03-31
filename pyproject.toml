@@ -26,6 +26,7 @@ horovod = {extras = ["spark", "tensorflow"], version = "^0.24.2"}
 
 [tool.poetry.dev-dependencies]
 dbx = "^0.4.1"
+pytest = "^7.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
