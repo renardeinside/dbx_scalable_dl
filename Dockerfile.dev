@@ -1,33 +1,52 @@
-FROM condaforge/mambaforge:4.11.0-4
+FROM ubuntu:20.04
 
-ENV CONDA_CACHE_DIR=/opt/conda/pkgs
 ENV PIP_CACHE_DIR=/opt/pip/.cache
+ENV POETRY_CACHE_DIR=/root/.cache/pypoetry
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHON_VERSION=3.8
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
 
-WORKDIR /app
 
-RUN apt update && apt install -y \
-    # build tooling
-    ccache cmake make build-essential \
-    # required for openmpi in horovod, we don't really use ssh functionality
-    openssh-client openssh-server
+WORKDIR /usr/src/project
 
-COPY environment.yml .
-RUN --mount=type=cache,target=$CONDA_CACHE_DIR --mount=type=cache,target=$PIP_CACHE_DIR mamba env create -f environment.yml
+RUN apt-get update && apt-get install -y --allow-downgrades --allow-change-held-packages --no-install-recommends \
+        build-essential \
+        cmake \
+        g++-7 \
+        git \
+        curl \
+        vim \
+        wget \
+        ca-certificates \
+        libjpeg-dev \
+        libpng-dev \
+        python${PYTHON_VERSION} \
+        python${PYTHON_VERSION}-dev \
+        python${PYTHON_VERSION}-distutils \
+        librdmacm1 \
+        libibverbs1 \
+        ibverbs-providers \
+        openjdk-8-jdk-headless \
+        openssh-client \
+        openssh-server \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN echo "conda activate dbx_scalable_dl" >> ~/.bashrc
-SHELL ["/bin/bash", "--login", "-c"]
 
-ENV PATH="/opt/conda/envs/dbx_scalable_dl/bin:$PATH"
 
-RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install tensorflow-cpu==2.8.0 keras==2.8.0
-RUN --mount=type=cache,target=$PIP_CACHE_DIR HOROVOD_WITH_TENSORFLOW=1 pip install "horovod[tensorflow,spark]==0.24.0"
 
-# STEPS BELOW ONLY REQUIRED FOR DEVELOPMENT OF THE PROJECT ITSELF, PLEASE OMIT THEM IF YOU'RE GOING TO DEVELOP A PROJECT WHICH IS BASED ON NOCTURNE
+RUN ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python
 
-ADD . .
+RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
+    python get-pip.py && \
+    rm get-pip.py
 
-RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install -e .
+RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install poetry
 
+COPY poetry.lock pyproject.toml ./
+
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry config virtualenvs.create false && poetry install -n
+
+RUN poetry cache clear . --all -n
 
 
