@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - 'feature/*'
+      - 'docs/*'
+      - 'bugfix/*'
     tags-ignore:
       - 'v*' # this tag type is used for release pipelines
       - 'release/docker/base/*' # this tag type is used for docker base pipelines
