@@ -46,9 +46,7 @@ class ModelBuilder(ABC):
         """
         return self._info.validation_converter
 
-    def get_steps_per_epoch(
-        self, total_elements: int, multiplier: Optional[int] = 1
-    ) -> int:
+    def get_steps_per_epoch(self, total_elements: int, multiplier: Optional[int] = 1) -> int:
         return max(1, total_elements // (self.batch_size * multiplier))
 
     @property

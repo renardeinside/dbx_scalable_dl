@@ -51,9 +51,7 @@ class TensorflowModelBuilder(ModelBuilder, ABC):
     ) -> tf.data.Dataset:  # pragma: no cover
         return dataset
 
-    def validation_dataset_preprocessor(  # noqa
-        self, dataset: tf.data.Dataset
-    ) -> tf.data.Dataset:  # pragma: no cover
+    def validation_dataset_preprocessor(self, dataset: tf.data.Dataset) -> tf.data.Dataset:  # noqa  # pragma: no cover
         return dataset
 
     def __call__(self, *args, **kwargs):
@@ -70,9 +68,7 @@ class TensorflowModelBuilder(ModelBuilder, ABC):
         self.logger.info(f"Horovod size: {hvd.size()}")
 
         distributed_optimizer = hvd.DistributedOptimizer(self.get_optimizer(hvd.size()))
-        self._info.model.compile(
-            optimizer=distributed_optimizer, **self._info.compile_arguments
-        )
+        self._info.model.compile(optimizer=distributed_optimizer, **self._info.compile_arguments)
 
         callbacks = self._info.global_callbacks + [BroadcastGlobalVariablesCallback(0)]
 
@@ -87,12 +83,8 @@ class TensorflowModelBuilder(ModelBuilder, ABC):
             shard_count=hvd.size(),
             **self._info.validation_converter_context_arguments,
         ) as validation_reader:
-            train_steps_per_epoch = self.get_steps_per_epoch(
-                len(self.train_converter), hvd.size()
-            )
-            validation_steps_per_epoch = self.get_steps_per_epoch(
-                len(self.validation_converter), hvd.size()
-            )
+            train_steps_per_epoch = self.get_steps_per_epoch(len(self.train_converter), hvd.size())
+            validation_steps_per_epoch = self.get_steps_per_epoch(len(self.validation_converter), hvd.size())
 
             self.logger.info(
                 f"""Train information:

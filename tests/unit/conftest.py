@@ -41,9 +41,7 @@ def petastorm_cache_dir() -> str:
 
 
 @pytest.fixture()
-def sample_ratings_dataset(
-    spark: SparkSession, ratings_size: Optional[int] = 1000
-) -> DataFrame:
+def sample_ratings_dataset(spark: SparkSession, ratings_size: Optional[int] = 1000) -> DataFrame:
     product_ids = pd.Series([f"PID_{i:03}" for i in range(10)])
     user_ids = pd.Series([f"UID_{i:03}" for i in range(10)])
     _pdf = pd.DataFrame().from_dict(

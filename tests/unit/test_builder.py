@@ -17,14 +17,10 @@ class SampleTensorflowModelBuilder(TensorflowModelBuilder):
     def get_optimizer(self, size_multiplier: Optional[int] = 1) -> Optimizer:
         return tf.keras.optimizers.Adagrad(0.01 * size_multiplier)
 
-    def train_dataset_preprocessor(  # noqa
-        self, dataset: tf.data.Dataset
-    ) -> tf.data.Dataset:
+    def train_dataset_preprocessor(self, dataset: tf.data.Dataset) -> tf.data.Dataset:  # noqa
         return dataset.map(lambda element: (element[0], element[1]))
 
-    def validation_dataset_preprocessor(  # noqa
-        self, dataset: tf.data.Dataset
-    ) -> tf.data.Dataset:
+    def validation_dataset_preprocessor(self, dataset: tf.data.Dataset) -> tf.data.Dataset:  # noqa
         return self.train_dataset_preprocessor(dataset)
 
 
@@ -37,9 +33,7 @@ class UnserializableModelBuilder(SampleTensorflowModelBuilder):
 def test_builder(spark: SparkSession, petastorm_cache_dir: str):
     sample_df = spark.range(2000).toDF("X").selectExpr("X", "X * 1000 as y")
 
-    provider = TrainValidationProvider(
-        spark, sample_df, petastorm_cache_dir=f"file://{petastorm_cache_dir}"
-    )
+    provider = TrainValidationProvider(spark, sample_df, petastorm_cache_dir=f"file://{petastorm_cache_dir}")
 
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(8, input_shape=(1,)))
@@ -54,11 +48,7 @@ def test_builder(spark: SparkSession, petastorm_cache_dir: str):
         train_converter=train_converter,
         validation_converter=validation_converter,
         compile_arguments={"loss": "mean_absolute_error"},
-        unique_callbacks=[
-            LambdaCallback(
-                on_batch_begin=lambda batch, logs: logging.info(f"On batch {batch}")
-            )
-        ],
+        unique_callbacks=[LambdaCallback(on_batch_begin=lambda batch, logs: logging.info(f"On batch {batch}"))],
     )
     train_function = SampleTensorflowModelBuilder(spark, basic_info)
     train_function()

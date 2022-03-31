@@ -29,17 +29,13 @@ class ConverterProvider:
         self._spark = spark
         self._spark.conf.set(SparkDatasetConverter.PARENT_CACHE_DIR_URL_CONF, cache_dir)
 
-    def get_dataset_converter(
-        self, df: DataFrame, with_repartition: Optional[bool] = True
-    ) -> SparkDatasetConverter:
+    def get_dataset_converter(self, df: DataFrame, with_repartition: Optional[bool] = True) -> SparkDatasetConverter:
 
         # sometimes provided dataset is not properly or equally distributed across executor nodes
         # such cases will lead to runtime failures in horovod
         # therefore it's better to ensure that distribution of data is appropriate
         if with_repartition:
-            num_partitions = self.DEFAULT_NUM_REPARTITIONS * get_num_executors(
-                self._spark
-            )
+            num_partitions = self.DEFAULT_NUM_REPARTITIONS * get_num_executors(self._spark)
             _df = df.repartition(num_partitions)
         else:
             _df = df

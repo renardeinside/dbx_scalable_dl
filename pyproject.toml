@@ -36,11 +36,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 120
 target-version = ['py38']
-exclude = '''
-/(
-  | build
-)/
-'''
 
 [tool.pytest.ini_options]
 addopts = "-s -p no:warnings"
