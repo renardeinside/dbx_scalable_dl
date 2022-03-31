@@ -3,7 +3,7 @@ name: CI pipeline
 on:
   push:
     branches:
-      - '**'
+      - 'feature/*'
     tags-ignore:
       - 'v*' # this tag type is used for release pipelines
       - 'release/docker/base/*' # this tag type is used for docker base pipelines

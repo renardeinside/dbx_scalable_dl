@@ -38,40 +38,11 @@ RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
     python get-pip.py && \
     rm get-pip.py
 
-RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install poetry
+COPY requirements.txt .
 
-COPY pyproject.toml poetry.lock ./
+RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install tensorflow==2.8.0
+RUN --mount=type=cache,target=$PIP_CACHE_DIR HOROVOD_WITH_TENSORFLOW=1 pip install -r requirements.txt
 
-
-# Currently poetry install is significantly slower than pip install, so we're creating a
-# requirements.txt output and running pip install with it.
-# Follow this issue: https://github.com/python-poetry/poetry/issues/338
-# Setting --without-hashes because of this issue: https://github.com/pypa/pip/issues/4995
-
-RUN --mount=type=cache,target=$PIP_CACHE_DIR poetry config virtualenvs.create false \
-                && poetry run pip install tensorflow==2.8.0 \
-                && poetry export --without-hashes -f requirements.txt \
-                |  HOROVOD_WITH_TENSORFLOW=1 poetry run pip install -r /dev/stdin
-
-
-
-
-
-
-
-
-#
-#
-#
-#
-
-
-#RUN --mount=type=cache,target=$PIP_CACHE_DIR pip install poetry
-#
-#COPY poetry.lock pyproject.toml ./
-#
-#RUN mkdir -p /opt/.poetry/ && poetry export
-#
-#RUN poetry cache clear . --all -n
+RUN pip cache purge
 
 

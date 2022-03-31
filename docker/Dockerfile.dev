@@ -1,4 +1,4 @@
-FROM renardeinside/nocturne-base
+FROM nocturne-base
 
 ENV POETRY_CACHE_DIR=/root/.cache/pypoetry
 
