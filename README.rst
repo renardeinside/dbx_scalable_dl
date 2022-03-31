@@ -24,21 +24,30 @@ Dependencies
 
 The following libraries shall be installed before using :code:`nocturne`:
 
+* JDK 1.8
 * Apache Spark 3.x
 * Tensorflow 2.x
 * :code:`horovod[spark, tensorflow]`
 * :code:`petastorm`
 
-Since packaging of these dependencies might be challenging, for local development, please use the `Dockerfile.dev`_.
+Since packaging of these dependencies might be challenging, you can use the base docker image with all dependencies provided:
+
+.. code-block::
+
+    docker pull renardeinside/nocturne-base
+
+.. note::
+
+    The image size is approx. 2.3 Gb, so the first pull might take quite a while.
+
 
 To install the library, run:
 
 .. code-block::
 
-    pip install https://github.com/renardeinside/nocturne.git@<insert-version-tag-here>
+    NOCTURNE_VERSION=<version-tag> # for example v0.0.1
+    pip install https://github.com/renardeinside/nocturne.git@${NOCTURNE_VERSION}
 
-
-To add this library as a dependency, simply provide the URL above it in the :code:`setup.py` file or add it to your :code:`requirements.txt`.
 
 
 

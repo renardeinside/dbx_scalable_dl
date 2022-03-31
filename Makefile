@@ -6,6 +6,9 @@ endif
 local-build-base:
 	docker build -t nocturne-base --file=docker/Dockerfile.base .
 
+local-build-dev:
+	docker build -t nocturne-dev --file=docker/Dockerfile.dev .
+
 #local-test: local-build
 #	docker run -v $(PWD):/usr/src/project nocturne pytest tests/unit #--cov --cov-report html --cov-report xml
 #
