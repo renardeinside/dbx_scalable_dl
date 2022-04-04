@@ -41,7 +41,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: build
+      - name: build base
         uses: docker/build-push-action@v2
         with:
           file: Dockerfile.base
@@ -50,6 +50,17 @@ jobs:
           tags: nocturne-base
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: build dev
+        uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile.dev
+          context: .
+          load: true
+          tags: nocturne-dev
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
 #
 #      - name: run tests
 #        run: make ci-test
