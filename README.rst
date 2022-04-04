@@ -3,12 +3,15 @@ Nocturne - utilities for Scalable Deep Learning with Spark, Horovod and Petastor
 
 This repository contains useful elements and building blocks for scalable Deep Learning applications.
 
-|build| |codecov| |black|
+|build| |codecov| |black| |pypi|
 
 .. |build| image:: https://img.shields.io/github/workflow/status/renardeinside/nocturne/CI%20pipeline/main?style=for-the-badge
     :alt: GitHub Workflow Status
     :target: https://github.com/renardeinside/dbx_scalable_dl/actions/workflows/onpush.yml
 
+.. |pypi| image:: https://img.shields.io/pypi/v/nocturne.svg?style=for-the-badge
+    :target: https://pypi.org/project/nocturne/
+    :alt: Latest Python Release
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg?style=for-the-badge
     :target: https://github.com/psf/black
@@ -30,23 +33,14 @@ The following libraries shall be installed before using :code:`nocturne`:
 * :code:`horovod[spark, tensorflow]`
 * :code:`petastorm`
 
-Since packaging of these dependencies might be challenging, you can use the base docker image with all dependencies provided:
-
-.. code-block::
-
-    docker pull renardeinside/nocturne-base
-
-.. note::
-
-    The image size is approx. 2.3 Gb, so the first pull might take quite a while.
+Since packaging of these dependencies might be challenging, you can use the base docker image with all dependencies provided in `Dockerfile.base`_.
 
 
 To install the library, run:
 
 .. code-block::
 
-    NOCTURNE_VERSION=<version-tag> # for example v0.0.1
-    pip install https://github.com/renardeinside/nocturne.git@${NOCTURNE_VERSION}
+    pip install nocturne
 
 
 
@@ -59,4 +53,4 @@ Resources
 * `Amazon datasets <https://nijianmo.github.io/amazon/index.html>`_
 
 
-.. _Dockerfile.dev: Dockerfile.dev
+.. _Dockerfile.base: docker/Dockerfile.dev
