@@ -13,15 +13,29 @@ from nocturne.api.model_builder.base import ModelBuilder, ModelBuilderInfo
 
 @dataclass
 class TensorflowModelBuilderInfo(ModelBuilderInfo):
+    """
+    dataclass for providing information for the Tensorflow model builder
+    model is a non-compiled instance of the tf.keras.Model
+    global_callbacks: callbacks that will be used across all workers
+    unique_callbacks: callbacks that will be used only for the worker with hvd.rank() == 0
+    compile_arguments: additional arguments to the model.compile command
+    train_converter_context_arguments: additional arguments for horovod converter for train dataset
+    validation_converter_context_arguments: additional arguments for horovod converter for validation dataset
+    model_fit_arguments: additional arguments for model fit
+    """
     model: Model
     global_callbacks: Optional[List[Callback]] = field(default_factory=list)
     unique_callbacks: Optional[List[Callback]] = field(default_factory=list)
     compile_arguments: Optional[Dict] = field(default_factory=dict)
     train_converter_context_arguments: Optional[Dict] = field(default_factory=dict)
     validation_converter_context_arguments: Optional[Dict] = field(default_factory=dict)
+    model_fit_arguments: Optional[Dict] = field(default_factory=dict)
 
 
 class TensorflowModelBuilder(ModelBuilder, ABC):
+    """
+    Abstract class for model builder implementations.
+    """
     def __init__(self, spark: SparkSession, info: TensorflowModelBuilderInfo):
         self._info = info
         super().__init__(spark, info)
@@ -117,4 +131,5 @@ class TensorflowModelBuilder(ModelBuilder, ABC):
                 validation_data=validation_ds,
                 callbacks=callbacks,
                 verbose=True,
+                **self._info.model_fit_arguments
             )
