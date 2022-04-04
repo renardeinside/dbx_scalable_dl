@@ -12,7 +12,11 @@ local-build-dev: local-build-base
 local-test: local-build-dev
 	docker run -v $(PWD):/usr/src/project nocturne-dev python -m pytest tests/unit --cov --cov-report html --cov-report xml
 
+
+build-ci:
+	docker build -t nocturne-ci --file=docker/Dockerfile.ci .
+
 ci-test:
-	docker run -v $(PWD):/usr/src/project nocturne-ci \
-		pip install -e . && python -m pytest tests/unit --cov --cov-report html --cov-report xml
+	docker run -v $(PWD):/usr/src/project nocturne-ci /bin/bash -c \
+		"pip install -e .;python -m pytest tests/unit --cov --cov-report html --cov-report xml"
 
