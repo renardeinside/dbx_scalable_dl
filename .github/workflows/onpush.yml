@@ -44,7 +44,7 @@ jobs:
       - name: build base
         uses: docker/build-push-action@v2
         with:
-          file: Dockerfile.base
+          file: docker/Dockerfile.base
           context: .
           load: true
           tags: nocturne-base
@@ -54,7 +54,7 @@ jobs:
       - name: build dev
         uses: docker/build-push-action@v2
         with:
-          file: Dockerfile.dev
+          file: docker/Dockerfile.dev
           context: .
           load: true
           tags: nocturne-dev
