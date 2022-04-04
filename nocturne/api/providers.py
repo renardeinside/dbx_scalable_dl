@@ -60,7 +60,7 @@ class TrainValidationProvider:
         self,
         spark: SparkSession,
         df: DataFrame,
-        petastorm_cache_dir: Optional[str] = default_cache_dir(),
+        petastorm_cache_dir: Optional[str] = None
     ):
         """
 
@@ -69,6 +69,10 @@ class TrainValidationProvider:
         :param petastorm_cache_dir: cache directory for petastorm, optional
         """
         self._df = df
+
+        if not petastorm_cache_dir:
+            petastorm_cache_dir = default_cache_dir()
+
         self._provider = ConverterProvider(spark, petastorm_cache_dir)
 
     def get_train_validation_converters(
