@@ -6,6 +6,7 @@ on:
       - 'feature/*'
       - 'docs/*'
       - 'bugfix/*'
+      - 'main'
     tags-ignore:
       - 'v*' # this tag type is used for release pipelines
       - 'release/docker/base/*' # this tag type is used for docker base pipelines
@@ -62,6 +63,6 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-#      - name: publish test coverage
-#        uses: codecov/codecov-action@v2
+      - name: publish test coverage
+        uses: codecov/codecov-action@v2
 
