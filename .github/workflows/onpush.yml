@@ -51,9 +51,9 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-      - name: list images
+      - name: build dev
         run: |
-          docker image ls
+          make local-build-dev
 
 #      - name: build dev
 #        uses: docker/build-push-action@v2
