@@ -53,4 +53,4 @@ Resources
 * `Amazon datasets <https://nijianmo.github.io/amazon/index.html>`_
 
 
-.. _Dockerfile.base: docker/Dockerfile.dev
+.. _Dockerfile.base: docker/Dockerfile.base
