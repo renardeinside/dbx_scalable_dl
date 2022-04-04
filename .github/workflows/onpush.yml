@@ -44,16 +44,12 @@ jobs:
       - name: build base
         uses: docker/build-push-action@v2
         with:
-          file: docker/Dockerfile.base
+          file: docker/Dockerfile.ci
           context: .
           load: true
-          tags: nocturne-base
+          tags: nocturne-ci
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-
-      - name: build dev
-        run: |
-          make local-build-dev
 
 #      - name: build dev
 #        uses: docker/build-push-action@v2
