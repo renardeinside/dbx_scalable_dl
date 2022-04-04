@@ -6,6 +6,7 @@ on:
       - 'feature/*'
       - 'docs/*'
       - 'bugfix/*'
+      - 'main'
     tags-ignore:
       - 'v*' # this tag type is used for release pipelines
       - 'release/docker/base/*' # this tag type is used for docker base pipelines
@@ -41,27 +42,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: build
+      - name: build ci container
         uses: docker/build-push-action@v2
         with:
-          file: Dockerfile.base
+          file: docker/Dockerfile.ci
           context: .
           load: true
-          tags: nocturne-base
+          tags: nocturne-ci
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-#
-#      - name: run tests
-#        run: make ci-test
-#
-#      # Temp fix
-#      # https://github.com/docker/build-push-action/issues/252
-#      # https://github.com/moby/buildkit/issues/1896
-#      - name: Move cache
-#        run: |
-#          rm -rf /tmp/.buildx-cache
-#          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-#
-#      - name: publish test coverage
-#        uses: codecov/codecov-action@v2
+
+      - name: run tests
+        run: make ci-test
+
+      # Temp fix
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: publish test coverage
+        uses: codecov/codecov-action@v2
 
