@@ -49,8 +49,6 @@ Resources
 ---------
 
 * `Horovod installation guide <https://horovod.readthedocs.io/en/stable/install_include.html>`_
-* `MLflow custom Python Models <https://mlflow.org/docs/1.6.0/python_api/mlflow.pyfunc.html>`_
-* `Amazon datasets <https://nijianmo.github.io/amazon/index.html>`_
 
 
 .. _Dockerfile.base: docker/Dockerfile.base
